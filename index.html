@@ -1,0 +1,1312 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PureTech Wallet | محفظة بيور تك المالية</title>
+
+  <!-- PWA & Mobile Meta Tags -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="PureTech Wallet">
+
+  <!-- Google Fonts: Cairo (Arabic) & Inter (English/Spanish) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- FontAwesome 6 Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              400: '#34d399',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+              900: '#064e3b'
+            },
+            accent: {
+              500: '#6366f1',
+              600: '#4f46e5'
+            },
+            dark: {
+              800: '#1e293b',
+              850: '#151f30',
+              900: '#0f172a',
+              950: '#090d16'
+            }
+          },
+          fontFamily: {
+            cairo: ['Cairo', 'sans-serif'],
+            inter: ['Inter', 'sans-serif']
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="bg-dark-950 text-slate-100 min-h-screen flex flex-col selection:bg-brand-500 selection:text-white">
+
+  <!-- TOP APP HEADER -->
+  <header class="sticky top-0 z-40 bg-dark-900/90 backdrop-blur-md border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 py-3 flex flex-wrap items-center justify-between gap-4">
+      
+      <!-- Logo & App Name -->
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-brand-600 to-accent-500 flex items-center justify-center shadow-lg shadow-brand-500/20 text-white text-xl font-black">
+          <i class="fa-solid fa-wallet"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-xl font-black tracking-tight text-white flex items-center gap-1.5">
+              <span>PureTech</span>
+              <span class="text-brand-400">Wallet</span>
+            </h1>
+            <span id="networkStatusBadge" class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-brand-500/10 text-brand-400 border border-brand-500/20">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 status-pulse me-1.5" id="networkStatusDot"></span>
+              <span id="networkStatusText" data-i18n="badge_offline">100% Offline</span>
+            </span>
+          </div>
+          <p class="text-xs text-slate-400 font-medium" data-i18n="tagline">Smart Personal Finance & Creator Wealth</p>
+        </div>
+      </div>
+
+      <!-- Live Reference Rates Ticker (USD, EUR, Gold) -->
+      <div class="hidden xl:flex items-center gap-3 bg-dark-950/80 px-3.5 py-1.5 rounded-xl border border-slate-800/80 text-xs">
+        <div class="flex items-center gap-1.5 text-slate-400">
+          <i class="fa-solid fa-coins text-amber-400"></i>
+          <span data-i18n="label_live_rates">Live Market Rates:</span>
+        </div>
+        <div class="flex items-center gap-3 font-mono font-semibold">
+          <span class="text-slate-300">USD: <span id="tickerUsd" class="text-emerald-400">48.50</span></span>
+          <span class="text-slate-600">|</span>
+          <span class="text-slate-300">EUR: <span id="tickerEur" class="text-blue-400">52.20</span></span>
+          <span class="text-slate-600">|</span>
+          <span class="text-slate-300">Gold 24k: <span id="tickerGold" class="text-amber-400">3,750</span></span>
+          <button type="button" id="btnQuickSyncHeader" class="ms-1 px-2 py-0.5 rounded-md bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 transition-all flex items-center gap-1 text-[11px] font-sans" title="Sync Live Rates">
+            <i id="headerSyncIcon" class="fa-solid fa-arrows-rotate text-[10px]"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Controls: Currency, Language & Quick Actions -->
+      <div class="flex items-center gap-2.5">
+        
+        <!-- Base Currency Dropdown -->
+        <div class="flex items-center bg-dark-850 rounded-lg p-1 border border-slate-700">
+          <span class="text-xs text-slate-400 px-2 flex items-center gap-1">
+            <i class="fa-solid fa-money-bill-wave text-brand-400"></i>
+            <span class="hidden sm:inline" data-i18n="label_currency">Currency</span>:
+          </span>
+          <select id="currencySelect" class="bg-dark-900 text-white font-semibold text-xs rounded-md px-2 py-1.5 border border-slate-700 focus:outline-none focus:border-brand-500 cursor-pointer">
+            <option value="EGP">EGP (ج.م)</option>
+            <option value="USD">USD ($)</option>
+            <option value="EUR">EUR (€)</option>
+            <option value="SAR">SAR (ر.س)</option>
+            <option value="AED">AED (د.إ)</option>
+            <option value="KWD">KWD (د.ك)</option>
+            <option value="MAD">MAD (د.م)</option>
+            <option value="TRY">TRY (₺)</option>
+            <option value="GEL">GEL (₾)</option>
+          </select>
+        </div>
+
+        <!-- Language Selector -->
+        <div class="flex items-center bg-dark-850 rounded-lg p-1 border border-slate-700">
+          <button type="button" data-lang="ar" class="lang-btn px-2.5 py-1 text-xs font-bold rounded-md transition-all text-slate-300 hover:text-white">عربي</button>
+          <button type="button" data-lang="en" class="lang-btn px-2.5 py-1 text-xs font-bold rounded-md transition-all text-slate-300 hover:text-white">EN</button>
+          <button type="button" data-lang="es" class="lang-btn px-2.5 py-1 text-xs font-bold rounded-md transition-all text-slate-300 hover:text-white">ES</button>
+        </div>
+
+        <!-- Privacy & Security Quick Actions -->
+        <div class="flex items-center gap-1.5">
+          <button type="button" id="btnTogglePrivacy" class="p-2 rounded-lg bg-dark-850 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700 text-xs transition-colors flex items-center justify-center" title="Toggle Privacy Mode" aria-label="Toggle Privacy Mode">
+            <i id="iconPrivacyToggle" class="fa-solid fa-eye text-xs"></i>
+          </button>
+          <button type="button" id="btnQuickLock" class="hidden p-2 rounded-lg bg-dark-850 hover:bg-rose-950/40 text-slate-300 hover:text-rose-400 border border-slate-700 text-xs transition-colors flex items-center justify-center" title="Lock Wallet" aria-label="Lock Wallet">
+            <i class="fa-solid fa-lock text-xs"></i>
+          </button>
+        </div>
+
+      </div>
+
+
+
+    </div>
+
+    <!-- Navigation Tabs -->
+    <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex overflow-x-auto gap-2 py-2 border-t border-slate-800/60 no-scrollbar">
+      <button data-tab="tab-overview" class="nav-tab active flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap bg-brand-500/15 text-brand-400 border border-brand-500/30">
+        <i class="fa-solid fa-chart-pie"></i>
+        <span data-i18n="nav_dashboard">Overview Dashboard</span>
+      </button>
+      <button data-tab="tab-personal" class="nav-tab flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap text-slate-400 hover:text-white hover:bg-slate-800/60 border border-transparent">
+        <i class="fa-solid fa-scale-balanced"></i>
+        <span data-i18n="nav_personal">Resources & Obligations</span>
+      </button>
+      <button data-tab="tab-assets" class="nav-tab flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap text-slate-400 hover:text-white hover:bg-slate-800/60 border border-transparent">
+        <i class="fa-solid fa-vault"></i>
+        <span data-i18n="nav_assets">Assets & Net Worth</span>
+      </button>
+      <button data-tab="tab-creators" class="nav-tab flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap text-slate-400 hover:text-white hover:bg-slate-800/60 border border-transparent">
+        <i class="fa-solid fa-video"></i>
+        <span data-i18n="nav_creators">Content Creators Hub</span>
+      </button>
+      <button data-tab="tab-freelance" class="nav-tab flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap text-slate-400 hover:text-white hover:bg-slate-800/60 border border-transparent">
+        <i class="fa-solid fa-laptop-code"></i>
+        <span data-i18n="nav_freelance">Freelance Workspace</span>
+      </button>
+      <button data-tab="tab-settings" class="nav-tab flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap text-slate-400 hover:text-white hover:bg-slate-800/60 border border-transparent">
+        <i class="fa-solid fa-database"></i>
+        <span data-i18n="nav_settings">Backup & Database</span>
+      </button>
+    </nav>
+  </header>
+
+  <!-- MAIN VIEWPORT CONTAINER -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- MODULE 1: COMPREHENSIVE OVERVIEW DASHBOARD -->
+    <section id="tab-overview" class="tab-content space-y-6">
+      
+      <!-- Smart Integration Banner & Toggle -->
+      <div class="glass-card rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border border-brand-500/20">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-brand-500/20 text-brand-400 flex items-center justify-center text-lg">
+            <i class="fa-solid fa-sliders"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-white text-sm" data-i18n="smart_toggle_title">Smart Online Cashflow Integration</h3>
+            <p class="text-xs text-slate-400" data-i18n="smart_toggle_desc">Automatically merge your Content Creation & Freelancing profits into your main liquid balance and Net Worth.</p>
+          </div>
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer select-none">
+          <input type="checkbox" id="includeOnlineToggle" class="sr-only peer" checked>
+          <div class="w-14 h-7 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[4px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-brand-500"></div>
+          <span class="ms-3 text-xs font-bold text-slate-300 peer-checked:text-brand-300" data-i18n="smart_toggle_status">Online Profits Included</span>
+        </label>
+      </div>
+
+      <!-- 4 Hero KPI Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        <!-- KPI 1: Total Net Worth -->
+        <div class="glass-card rounded-2xl p-5 border-l-4 border-l-brand-500 relative overflow-hidden group">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-400" data-i18n="kpi_net_worth">Total Net Worth</span>
+            <div class="w-9 h-9 rounded-xl bg-brand-500/10 text-brand-400 flex items-center justify-center">
+              <i class="fa-solid fa-crown text-base"></i>
+            </div>
+          </div>
+          <div class="text-2xl sm:text-3xl font-black text-white font-mono tracking-tight" id="kpiNetWorth">0.00</div>
+          <p class="text-[11px] text-slate-400 mt-2 flex items-center gap-1">
+            <i class="fa-solid fa-circle-check text-brand-400"></i>
+            <span data-i18n="kpi_net_worth_sub">Liquid Cash + Today's Assets</span>
+          </p>
+        </div>
+
+        <!-- KPI 2: Net Remaining Cash (Liquidity) -->
+        <div class="glass-card rounded-2xl p-5 border-l-4 border-l-emerald-400 relative overflow-hidden group">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-400" data-i18n="kpi_liquidity">Net Remaining Cash</span>
+            <div class="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+              <i class="fa-solid fa-money-bill-trend-up text-base"></i>
+            </div>
+          </div>
+          <div class="text-2xl sm:text-3xl font-black text-emerald-400 font-mono tracking-tight" id="kpiLiquidity">0.00</div>
+          <p class="text-[11px] text-slate-400 mt-2 flex items-center gap-1">
+            <i class="fa-solid fa-arrow-right-arrow-left text-emerald-400"></i>
+            <span data-i18n="kpi_liquidity_sub">Incomes - Monthly Obligations</span>
+          </p>
+        </div>
+
+        <!-- KPI 3: Total Assets Value Today -->
+        <div class="glass-card rounded-2xl p-5 border-l-4 border-l-amber-500 relative overflow-hidden group">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-400" data-i18n="kpi_assets">Total Assets Value</span>
+            <div class="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center">
+              <i class="fa-solid fa-gem text-base"></i>
+            </div>
+          </div>
+          <div class="text-2xl sm:text-3xl font-black text-amber-300 font-mono tracking-tight" id="kpiAssetsValue">0.00</div>
+          <p class="text-[11px] text-slate-400 mt-2 flex items-center gap-1">
+            <i class="fa-solid fa-bolt text-amber-400"></i>
+            <span data-i18n="kpi_assets_sub">Priced at today's market rates</span>
+          </p>
+        </div>
+
+        <!-- KPI 4: Net Online Work Earnings -->
+        <div class="glass-card rounded-2xl p-5 border-l-4 border-l-accent-500 relative overflow-hidden group">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-400" data-i18n="kpi_online_work">Net Online Earnings</span>
+            <div class="w-9 h-9 rounded-xl bg-accent-500/10 text-indigo-400 flex items-center justify-center">
+              <i class="fa-solid fa-globe text-base"></i>
+            </div>
+          </div>
+          <div class="text-2xl sm:text-3xl font-black text-indigo-300 font-mono tracking-tight" id="kpiOnlineEarnings">0.00</div>
+          <p class="text-[11px] text-slate-400 mt-2 flex items-center gap-1">
+            <i class="fa-solid fa-code text-indigo-400"></i>
+            <span data-i18n="kpi_online_work_sub">Creator Hub + Freelance Net</span>
+          </p>
+        </div>
+
+      </div>
+
+      <!-- Financial Health & Sustainability Intelligence Row -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+        
+        <!-- Health Card 1: Savings Rate -->
+        <div class="glass-card rounded-2xl p-4 border border-emerald-500/20 bg-dark-900/50 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+              <i class="fa-solid fa-piggy-bank text-lg"></i>
+            </div>
+            <div>
+              <h5 class="text-xs text-slate-400 font-semibold" data-i18n="kpi_savings_rate">Monthly Savings Rate</h5>
+              <div class="text-xl font-black font-mono text-emerald-400 tracking-tight" id="kpiSavingsRate">0.0%</div>
+            </div>
+          </div>
+          <span id="kpiSavingsBadge" class="px-2.5 py-1 rounded-md text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Healthy</span>
+        </div>
+
+        <!-- Health Card 2: Emergency Runway -->
+        <div class="glass-card rounded-2xl p-4 border border-indigo-500/20 bg-dark-900/50 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
+              <i class="fa-solid fa-shield-halved text-lg"></i>
+            </div>
+            <div>
+              <h5 class="text-xs text-slate-400 font-semibold" data-i18n="kpi_emergency_runway">Emergency Runway</h5>
+              <div class="text-xl font-black font-mono text-indigo-400 tracking-tight" id="kpiEmergencyRunway">0 Months</div>
+            </div>
+          </div>
+          <span id="kpiRunwayBadge" class="px-2.5 py-1 rounded-md text-[11px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">Safe</span>
+        </div>
+
+      </div>
+
+
+
+      <!-- Charts Row: Wealth Doughnut + Cashflow Pillar Comparison -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Doughnut: Wealth & Asset Distribution -->
+        <div class="lg:col-span-5 glass-card rounded-2xl p-5 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <h4 class="font-bold text-white text-sm flex items-center gap-2">
+                <i class="fa-solid fa-chart-pie text-brand-400"></i>
+                <span data-i18n="chart_wealth_title">Wealth & Asset Allocation</span>
+              </h4>
+              <span class="text-xs text-slate-400 font-mono" id="chartTotalLabel">100%</span>
+            </div>
+            <div class="relative w-full aspect-square max-h-[290px] flex items-center justify-center">
+              <canvas id="wealthDoughnutChart"></canvas>
+            </div>
+          </div>
+          <div id="doughnutLegend" class="mt-4 grid grid-cols-2 gap-2 text-xs text-slate-300"></div>
+        </div>
+
+        <!-- Bar: Income vs Obligations by Pillar -->
+        <div class="lg:col-span-7 glass-card rounded-2xl p-5 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <h4 class="font-bold text-white text-sm flex items-center gap-2">
+                <i class="fa-solid fa-chart-simple text-accent-500"></i>
+                <span data-i18n="chart_pillars_title">Income vs Expenses Across Pillars</span>
+              </h4>
+              <span class="text-[11px] text-slate-400" data-i18n="chart_pillars_sub">Personal • Creators • Freelancing</span>
+            </div>
+            <div class="relative w-full h-[290px]">
+              <canvas id="pillarsBarChart"></canvas>
+            </div>
+          </div>
+          <div class="mt-4 flex flex-wrap items-center justify-around gap-4 text-xs border-t border-slate-800/80 pt-3">
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+              <span class="text-slate-400" data-i18n="label_total_inflow">Total Inflow:</span>
+              <span class="font-mono font-bold text-emerald-400" id="barInflowTotal">0.00</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-rose-500"></span>
+              <span class="text-slate-400" data-i18n="label_total_outflow">Total Outflow:</span>
+              <span class="font-mono font-bold text-rose-400" id="barOutflowTotal">0.00</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+
+
+      <!-- Historical Monthly Cashflow Trends Chart -->
+      <div class="glass-card rounded-2xl p-5 space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <h4 class="font-bold text-white text-sm flex items-center gap-2">
+            <i class="fa-solid fa-chart-line text-emerald-400"></i>
+            <span data-i18n="chart_trends_title">Historical Monthly Cashflow Trends</span>
+          </h4>
+          <span class="text-xs text-slate-400 font-mono" id="trendSubtitle">Last 6 Months</span>
+        </div>
+        <div class="relative w-full h-[260px]">
+          <canvas id="historicalTrendsChart"></canvas>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- MODULE 2: PERSONAL RESOURCES & MONTHLY OBLIGATIONS -->
+    <section id="tab-personal" class="tab-content hidden space-y-6">
+      
+      <!-- Live Equation Banner at Top -->
+      <div class="glass-card rounded-2xl p-4 sm:p-5 border border-slate-700 bg-gradient-to-r from-dark-900 via-dark-850 to-dark-900 shadow-xl">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3 pb-2 border-b border-slate-800">
+          <div class="text-xs font-bold uppercase text-slate-400 flex items-center gap-1.5">
+            <i class="fa-solid fa-calculator text-brand-400"></i>
+            <span data-i18n="equation_banner_title">Live Personal Monthly Cashflow Equation</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <label for="cashflowPeriodSelect" class="text-xs text-slate-400 font-semibold flex items-center gap-1">
+              <i class="fa-solid fa-calendar-days text-brand-400"></i>
+              <span data-i18n="filter_period">Period:</span>
+            </label>
+            <select id="cashflowPeriodSelect" class="bg-dark-950 text-white text-xs px-2.5 py-1 rounded-lg border border-slate-700 focus:outline-none focus:border-brand-500 transition-colors">
+              <option value="all" data-i18n="filter_all_time">All Time (Cumulative)</option>
+            </select>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-center justify-between gap-3 text-center sm:text-start">
+          
+          <!-- Income Block -->
+          <div class="flex-1 min-w-[130px] bg-dark-950/70 p-3 rounded-xl border border-emerald-500/20">
+            <span class="text-xs text-slate-400 block" data-i18n="eq_total_income">Total Incomes</span>
+            <span class="text-xl sm:text-2xl font-black text-emerald-400 font-mono" id="eqTotalIncome">0.00</span>
+          </div>
+
+          <div class="text-2xl font-black text-slate-500 px-1">-</div>
+
+          <!-- Obligations Block -->
+          <div class="flex-1 min-w-[130px] bg-dark-950/70 p-3 rounded-xl border border-rose-500/20">
+            <span class="text-xs text-slate-400 block" data-i18n="eq_total_obligations">Monthly Obligations</span>
+            <span class="text-xl sm:text-2xl font-black text-rose-400 font-mono" id="eqTotalObligations">0.00</span>
+          </div>
+
+          <div class="text-2xl font-black text-slate-500 px-1">=</div>
+
+          <!-- Net Balance Block -->
+          <div class="flex-1 min-w-[150px] bg-dark-950/70 p-3 rounded-xl border border-brand-500/40">
+            <span class="text-xs text-slate-400 block" data-i18n="eq_net_liquid">Net Liquid Cash Balance</span>
+            <span class="text-xl sm:text-2xl font-black text-brand-400 font-mono" id="eqNetBalance">0.00</span>
+          </div>
+
+          <div class="hidden sm:block text-2xl font-black text-slate-600 px-1">•</div>
+
+          <!-- Savings Rate Block -->
+          <div class="flex-1 min-w-[130px] bg-dark-950/70 p-3 rounded-xl border border-indigo-500/30">
+            <span class="text-xs text-slate-400 block" data-i18n="eq_savings_rate">Savings & Surplus Rate</span>
+            <span class="text-xl sm:text-2xl font-black text-indigo-400 font-mono" id="eqSavingsRate">0%</span>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Monthly Budget Spending Cap & Recurring Tools Card -->
+      <div class="glass-card rounded-2xl p-4 sm:p-5 border border-slate-700/80 bg-dark-900/60 shadow-lg space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center text-sm">
+              <i class="fa-solid fa-gauge-high"></i>
+            </div>
+            <div>
+              <h4 class="text-xs font-bold text-white flex items-center gap-1.5">
+                <span data-i18n="budget_title">Monthly Spending Budget Cap</span>
+                <span id="budgetAlertBadge" class="hidden px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30" data-i18n="budget_exceeded">Budget Exceeded!</span>
+              </h4>
+              <p id="budgetStatusText" class="text-[11px] text-slate-400 font-mono mt-0.5">0.00 / 0.00 (0%)</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="btnCloneRecurring" class="px-2.5 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 text-xs font-bold transition-all flex items-center gap-1.5" title="Copy fixed obligations into the current month">
+              <i class="fa-solid fa-arrows-rotate"></i>
+              <span data-i18n="btn_clone_recurring">Clone Obligations to Current Month</span>
+            </button>
+            <button id="btnSetBudget" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-all flex items-center gap-1.5">
+              <i class="fa-solid fa-sliders"></i>
+              <span data-i18n="btn_set_budget">Set Budget</span>
+            </button>
+          </div>
+        </div>
+        <!-- Budget Progress Bar -->
+        <div class="w-full bg-dark-950 rounded-full h-2.5 overflow-hidden border border-slate-800">
+          <div id="budgetProgressBar" class="h-full bg-emerald-500 transition-all duration-500 rounded-full" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <!-- Side-by-Side Panels: Incomes vs Obligations -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- PANEL 1: INCOMES & RESOURCES -->
+        <div class="glass-card rounded-2xl p-5 space-y-4">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                <i class="fa-solid fa-arrow-down-left"></i>
+              </div>
+              <div>
+                <h3 class="font-bold text-white text-base" data-i18n="panel_income_title">Financial Resources & Incomes</h3>
+                <p class="text-[11px] text-slate-400" data-i18n="panel_income_sub">Salary, bonuses, business profits, returns</p>
+              </div>
+            </div>
+            <button id="btnOpenAddIncome" class="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs flex items-center gap-1.5 transition-colors shadow-md shadow-emerald-500/20">
+              <i class="fa-solid fa-plus"></i>
+              <span data-i18n="btn_add_income">Add Income</span>
+            </button>
+          </div>
+
+          <!-- Incomes Search Filter -->
+          <div class="relative">
+            <i class="fa-solid fa-magnifying-glass absolute start-3 top-2.5 text-slate-500 text-xs"></i>
+            <input type="text" id="searchIncomesInput" data-i18n-placeholder="search_placeholder" placeholder="Search by title or category..." class="w-full bg-dark-900 border border-slate-800 rounded-lg py-1.5 ps-8 pe-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors">
+          </div>
+
+          <div id="incomesList" class="space-y-2.5 max-h-[460px] overflow-y-auto pr-1"></div>
+          <div id="incomesPagination" class="flex items-center justify-between pt-2 border-t border-slate-800 text-xs text-slate-400"></div>
+        </div>
+
+        <!-- PANEL 2: EXPENSES & OBLIGATIONS -->
+        <div class="glass-card rounded-2xl p-5 space-y-4">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center">
+                <i class="fa-solid fa-arrow-up-right"></i>
+              </div>
+              <div>
+                <h3 class="font-bold text-white text-base" data-i18n="panel_expense_title">Monthly Obligations & Living Costs</h3>
+                <p class="text-[11px] text-slate-400" data-i18n="panel_expense_sub">Housing, bills, loans, family, necessities</p>
+              </div>
+            </div>
+            <button id="btnOpenAddExpense" class="px-3 py-1.5 rounded-lg bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs flex items-center gap-1.5 transition-colors shadow-md shadow-rose-500/20">
+              <i class="fa-solid fa-plus"></i>
+              <span data-i18n="btn_add_obligation">Add Obligation</span>
+            </button>
+          </div>
+
+          <!-- Obligations Search Filter -->
+          <div class="relative">
+            <i class="fa-solid fa-magnifying-glass absolute start-3 top-2.5 text-slate-500 text-xs"></i>
+            <input type="text" id="searchObligationsInput" data-i18n-placeholder="search_placeholder" placeholder="Search by title or category..." class="w-full bg-dark-900 border border-slate-800 rounded-lg py-1.5 ps-8 pe-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500 transition-colors">
+          </div>
+
+          <div id="obligationsList" class="space-y-2.5 max-h-[460px] overflow-y-auto pr-1"></div>
+          <div id="obligationsPagination" class="flex items-center justify-between pt-2 border-t border-slate-800 text-xs text-slate-400"></div>
+        </div>
+
+      </div>
+
+
+
+    </section>
+
+    <!-- MODULE 3: ASSETS & NET WORTH CALCULATOR (LIVE RATES) -->
+    <section id="tab-assets" class="tab-content hidden space-y-6">
+      
+      <!-- Quick Reference Rates Bar -->
+      <div class="glass-card rounded-2xl p-5 border border-amber-500/20 space-y-3">
+        <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center">
+              <i class="fa-solid fa-arrow-trend-up"></i>
+            </div>
+            <div>
+              <h3 class="font-bold text-white text-sm" data-i18n="rates_bar_title">Daily Reference Exchange & Market Rates</h3>
+              <p class="text-xs text-slate-400" data-i18n="rates_bar_sub">Updating rates instantly recalibrates all foreign currency & gold assets</p>
+            </div>
+          </div>
+          <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto justify-between lg:justify-end">
+            <label class="inline-flex items-center gap-2 cursor-pointer select-none bg-dark-900/90 px-3 py-1.5 rounded-xl border border-slate-700/80 text-xs">
+              <input type="checkbox" id="autoSyncRatesToggle" class="accent-amber-500 rounded cursor-pointer" checked>
+              <span class="text-slate-300 font-semibold" data-i18n="label_auto_sync">Auto-fetch daily when online</span>
+            </label>
+            <button type="button" id="btnSyncRatesNow" class="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-amber-500/20">
+              <i id="syncRatesIcon" class="fa-solid fa-arrows-rotate"></i>
+              <span data-i18n="btn_sync_now">Fetch Live Rates Now</span>
+            </button>
+            <span class="text-xs text-slate-400 font-mono">
+              <span data-i18n="label_base_unit">Base Unit</span>: <strong class="text-white" id="ratesBaseCurrency">EGP</strong>
+            </span>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-center justify-between gap-2 text-[11px] bg-dark-950/70 px-3 py-1.5 rounded-lg border border-slate-800/80">
+          <div class="flex items-center gap-1.5 text-slate-400">
+            <i class="fa-solid fa-satellite-dish text-amber-400"></i>
+            <span data-i18n="label_last_sync">Last live sync:</span>
+            <span id="lastSyncStatusText" class="font-mono text-slate-300">—</span>
+          </div>
+          <span class="text-slate-500 font-mono text-[10px]">Open ExchangeRate-API + Spot XAU/24k</span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+          
+          <!-- Rate: USD -->
+          <div class="bg-dark-900 p-3 rounded-xl border border-slate-700">
+            <label class="text-xs text-slate-400 block mb-1 font-semibold flex items-center gap-1.5">
+              <i class="fa-solid fa-dollar-sign text-emerald-400"></i>
+              <span data-i18n="rate_usd">Today's USD Rate</span>
+            </label>
+            <div class="flex items-center gap-2">
+              <input type="number" step="0.01" min="0" id="rateInputUsd" class="w-full bg-dark-950 text-white font-mono font-bold text-sm px-3 py-1.5 rounded-lg border border-slate-700 focus:outline-none focus:border-brand-500">
+              <span class="text-xs text-slate-400 font-mono font-bold curr-tag">EGP</span>
+            </div>
+          </div>
+
+          <!-- Rate: EUR -->
+          <div class="bg-dark-900 p-3 rounded-xl border border-slate-700">
+            <label class="text-xs text-slate-400 block mb-1 font-semibold flex items-center gap-1.5">
+              <i class="fa-solid fa-euro-sign text-blue-400"></i>
+              <span data-i18n="rate_eur">Today's EUR Rate</span>
+            </label>
+            <div class="flex items-center gap-2">
+              <input type="number" step="0.01" min="0" id="rateInputEur" class="w-full bg-dark-950 text-white font-mono font-bold text-sm px-3 py-1.5 rounded-lg border border-slate-700 focus:outline-none focus:border-brand-500">
+              <span class="text-xs text-slate-400 font-mono font-bold curr-tag">EGP</span>
+            </div>
+          </div>
+
+          <!-- Rate: Gold 24k Gram -->
+          <div class="bg-dark-900 p-3 rounded-xl border border-slate-700">
+            <label class="text-xs text-slate-400 block mb-1 font-semibold flex items-center gap-1.5">
+              <i class="fa-solid fa-ring text-amber-400"></i>
+              <span data-i18n="rate_gold">Gold Gram (24k) Price</span>
+            </label>
+            <div class="flex items-center gap-2">
+              <input type="number" step="1" min="0" id="rateInputGold" class="w-full bg-dark-950 text-white font-mono font-bold text-sm px-3 py-1.5 rounded-lg border border-slate-700 focus:outline-none focus:border-brand-500">
+              <span class="text-xs text-slate-400 font-mono font-bold curr-tag">EGP</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Assets Overview & Inline Editable Table -->
+      <div class="glass-card rounded-2xl p-5 space-y-4">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+          <div>
+            <h3 class="font-bold text-white text-base flex items-center gap-2">
+              <i class="fa-solid fa-layer-group text-brand-400"></i>
+              <span data-i18n="assets_portfolio_title">Owned Assets Portfolio</span>
+            </h3>
+            <p class="text-xs text-slate-400" data-i18n="assets_portfolio_sub">Edit quantity or market price directly inline for instant net worth recalculation</p>
+          </div>
+          <button id="btnOpenAddAsset" class="px-3.5 py-2 rounded-lg bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs flex items-center gap-2 transition-colors shadow-md shadow-brand-500/20">
+            <i class="fa-solid fa-circle-plus"></i>
+            <span data-i18n="btn_add_asset">Register New Asset</span>
+          </button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-start text-xs text-slate-300">
+            <thead class="bg-dark-900/80 text-slate-400 uppercase text-[11px] font-bold border-b border-slate-800">
+              <tr>
+                <th class="py-3 px-3 text-start" data-i18n="th_asset_name">Asset / Item</th>
+                <th class="py-3 px-3 text-start" data-i18n="th_category">Category</th>
+                <th class="py-3 px-3 text-start" data-i18n="th_quantity">Qty / Grams / Units</th>
+                <th class="py-3 px-3 text-start" data-i18n="th_unit_price">Unit Price Today</th>
+                <th class="py-3 px-3 text-start" data-i18n="th_total_value">Total Today</th>
+                <th class="py-3 px-3 text-end" data-i18n="th_actions">Action</th>
+              </tr>
+            </thead>
+            <tbody id="assetsTableBody" class="divide-y divide-slate-800/60 font-medium"></tbody>
+          </table>
+        </div>
+        <div id="assetsPagination" class="flex items-center justify-between pt-3 border-t border-slate-800 text-xs text-slate-400"></div>
+      </div>
+
+    </section>
+
+    <!-- MODULE 4: CONTENT CREATORS HUB (PER-CHANNEL P&L) -->
+    <section id="tab-creators" class="tab-content hidden space-y-6">
+      
+      <!-- Creator Hub Summary Header -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        
+        <div class="glass-card rounded-2xl p-4 border-l-4 border-l-emerald-500">
+          <span class="text-xs text-slate-400 font-bold block" data-i18n="creator_total_rev">Total Creator Revenue</span>
+          <span class="text-2xl font-black text-emerald-400 font-mono mt-1 block" id="creatorTotalRev">0.00</span>
+          <span class="text-[11px] text-slate-400" data-i18n="creator_total_rev_sub">Sponsorships, AdSense & Support</span>
+        </div>
+
+        <div class="glass-card rounded-2xl p-4 border-l-4 border-l-rose-500">
+          <span class="text-xs text-slate-400 font-bold block" data-i18n="creator_total_exp">Production Expenses</span>
+          <span class="text-2xl font-black text-rose-400 font-mono mt-1 block" id="creatorTotalExp">0.00</span>
+          <span class="text-[11px] text-slate-400" data-i18n="creator_total_exp_sub">Editing, thumbnails, internet, gear</span>
+        </div>
+
+        <div class="glass-card rounded-2xl p-4 border-l-4 border-l-brand-500">
+          <span class="text-xs text-slate-400 font-bold block" data-i18n="creator_net_profit">Net Creator Profit</span>
+          <span class="text-2xl font-black text-brand-300 font-mono mt-1 block" id="creatorNetProfit">0.00</span>
+          <span class="text-[11px] text-slate-400" id="creatorProfitMargin">Margin: 0%</span>
+        </div>
+
+      </div>
+
+
+
+      <!-- Channel Management Strip -->
+      <div class="glass-card rounded-2xl p-5 space-y-4">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+          <div>
+            <h3 class="font-bold text-white text-base flex items-center gap-2">
+              <i class="fa-solid fa-satellite-dish text-brand-400"></i>
+              <span data-i18n="creator_channels_title">Monetized Channels & Accounts</span>
+            </h3>
+            <p class="text-xs text-slate-400" data-i18n="creator_channels_sub">Track each platform independently with dedicated production expenses</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="btnOpenAddChannel" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs flex items-center gap-1.5 transition-colors border border-slate-700">
+              <i class="fa-solid fa-plus text-brand-400"></i>
+              <span data-i18n="btn_add_channel">New Channel</span>
+            </button>
+            <button id="btnOpenAddCreatorTx" class="px-3.5 py-1.5 rounded-lg bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs flex items-center gap-1.5 transition-colors shadow-md shadow-brand-500/20">
+              <i class="fa-solid fa-receipt"></i>
+              <span data-i18n="btn_log_creator_tx">Log Revenue / Expense</span>
+            </button>
+          </div>
+        </div>
+
+        <div id="channelsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+
+        <div class="pt-4 border-t border-slate-800/80">
+          <div class="flex items-center justify-between mb-3">
+            <h4 class="font-bold text-sm text-slate-300" data-i18n="creator_tx_history">Channel Cashflow History</h4>
+            <select id="channelFilterSelect" class="bg-dark-900 text-xs text-slate-300 rounded-md px-2 py-1 border border-slate-700">
+              <option value="all" data-i18n="opt_all_channels">All Channels</option>
+            </select>
+          </div>
+          <div id="creatorTxList" class="space-y-2 max-h-[300px] overflow-y-auto pr-1"></div>
+          <div id="creatorTxPagination" class="flex items-center justify-between pt-2 border-t border-slate-800 text-xs text-slate-400"></div>
+        </div>
+
+      </div>
+
+
+
+    </section>
+
+    <!-- MODULE 5: FLEXIBLE FREELANCER WORKSPACE -->
+    <section id="tab-freelance" class="tab-content hidden space-y-6">
+      
+      <!-- Freelance Header & Role Customizer -->
+      <div class="glass-card rounded-2xl p-5 border border-indigo-500/20 space-y-4">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-lg">
+              <i class="fa-solid fa-user-tie"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs text-slate-400" data-i18n="label_freelance_role">Professional Specialty:</span>
+                <input type="text" id="freelanceRoleInput" data-i18n-placeholder="placeholder_freelance_role" placeholder="e.g. Full-Stack Developer & UI Designer" value="Full-Stack Developer & UI Designer" class="bg-dark-900 border border-slate-700 rounded px-2 py-0.5 text-xs text-white font-bold focus:outline-none focus:border-indigo-400">
+                <button id="btnSaveRole" class="text-[11px] bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-0.5 rounded font-bold transition-all" data-i18n="btn_save">Save</button>
+              </div>
+              <p class="text-xs text-slate-400 mt-1" data-i18n="freelance_custom_cats_desc">Customize your own income and expense categories dynamically</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="btnOpenAddFreelanceTx" class="px-3.5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-1.5 transition-colors shadow-md shadow-indigo-600/20">
+              <i class="fa-solid fa-plus-circle"></i>
+              <span data-i18n="btn_add_freelance_tx">Log Project / Cost</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+          <div class="bg-dark-900 p-3 rounded-xl border border-slate-800">
+            <span class="text-xs text-slate-400 block" data-i18n="fl_total_income">Freelance Inflow</span>
+            <span class="text-xl font-black text-emerald-400 font-mono mt-0.5 block" id="flTotalIncome">0.00</span>
+          </div>
+          <div class="bg-dark-900 p-3 rounded-xl border border-slate-800">
+            <span class="text-xs text-slate-400 block" data-i18n="fl_total_expenses">Business & Tool Costs</span>
+            <span class="text-xl font-black text-rose-400 font-mono mt-0.5 block" id="flTotalExpenses">0.00</span>
+          </div>
+          <div class="bg-dark-900 p-3 rounded-xl border border-slate-800">
+            <span class="text-xs text-slate-400 block" data-i18n="fl_net_profit">Net Freelance Profit</span>
+            <span class="text-xl font-black text-indigo-300 font-mono mt-0.5 block" id="flNetProfit">0.00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dynamic Custom Category Manager -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        <div class="glass-card rounded-2xl p-5 space-y-3">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+            <h4 class="font-bold text-sm text-white flex items-center gap-2">
+              <i class="fa-solid fa-tag text-emerald-400"></i>
+              <span data-i18n="fl_custom_income_cats">Custom Income Services</span>
+            </h4>
+            <div class="flex items-center gap-1.5">
+              <input type="text" id="newIncomeCatInput" data-i18n-placeholder="placeholder_new_cat" placeholder="New Category..." class="bg-dark-900 text-xs px-2.5 py-1 rounded border border-slate-700 text-white focus:outline-none focus:border-brand-500">
+              <button id="btnAddIncomeCat" class="bg-emerald-500 hover:bg-emerald-600 text-white text-xs px-2 py-1 rounded font-bold transition-all">
+                <i class="fa-solid fa-plus"></i>
+              </button>
+            </div>
+          </div>
+          <div id="flIncomeCatsBadges" class="flex flex-wrap gap-2 pt-1"></div>
+        </div>
+
+        <div class="glass-card rounded-2xl p-5 space-y-3">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+            <h4 class="font-bold text-sm text-white flex items-center gap-2">
+              <i class="fa-solid fa-server text-rose-400"></i>
+              <span data-i18n="fl_custom_expense_cats">Custom Expense Types</span>
+            </h4>
+            <div class="flex items-center gap-1.5">
+              <input type="text" id="newExpenseCatInput" data-i18n-placeholder="placeholder_new_cat" placeholder="New Category..." class="bg-dark-900 text-xs px-2.5 py-1 rounded border border-slate-700 text-white focus:outline-none focus:border-rose-500">
+              <button id="btnAddExpenseCat" class="bg-rose-500 hover:bg-rose-600 text-white text-xs px-2 py-1 rounded font-bold transition-all">
+                <i class="fa-solid fa-plus"></i>
+              </button>
+            </div>
+          </div>
+          <div id="flExpenseCatsBadges" class="flex flex-wrap gap-2 pt-1"></div>
+        </div>
+
+      </div>
+
+
+
+      <!-- Freelance Transaction Ledger -->
+      <div class="glass-card rounded-2xl p-5 space-y-3">
+        <h4 class="font-bold text-sm text-white flex items-center gap-2">
+          <i class="fa-solid fa-clock-rotate-left text-indigo-400"></i>
+          <span data-i18n="fl_ledger_title">Freelance Activity Ledger</span>
+        </h4>
+        <div id="freelanceTxList" class="space-y-2 max-h-[360px] overflow-y-auto pr-1"></div>
+        <div id="freelanceTxPagination" class="flex items-center justify-between pt-2 border-t border-slate-800 text-xs text-slate-400"></div>
+      </div>
+
+    </section>
+
+    <!-- MODULE 6: LOCAL DATABASE, BACKUP & DEMO RESET -->
+    <section id="tab-settings" class="tab-content hidden space-y-6">
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        <div class="glass-card rounded-2xl p-6 space-y-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-brand-500/20 text-brand-400 flex items-center justify-center text-lg">
+              <i class="fa-solid fa-file-export"></i>
+            </div>
+            <div>
+              <h3 class="font-bold text-white text-base" data-i18n="backup_title">Local Database Backup & Restore</h3>
+              <p class="text-xs text-slate-400" data-i18n="backup_sub">100% private. Save your data locally as a JSON file or restore from a previous backup.</p>
+            </div>
+          </div>
+
+          <div class="space-y-3 pt-2">
+            <button id="btnExportJson" class="w-full py-2.5 px-4 rounded-xl bg-dark-900 hover:bg-dark-850 border border-slate-700 text-white font-bold text-xs flex items-center justify-between transition-all group">
+              <span class="flex items-center gap-2">
+                <i class="fa-solid fa-download text-brand-400"></i>
+                <span data-i18n="btn_export_json">Export Database (.JSON)</span>
+              </span>
+              <i class="fa-solid fa-chevron-left rtl:fa-chevron-left ltr:fa-chevron-right text-slate-500 group-hover:text-white transition-transform"></i>
+            </button>
+
+            <label class="w-full py-2.5 px-4 rounded-xl bg-dark-900 hover:bg-dark-850 border border-slate-700 text-white font-bold text-xs flex items-center justify-between cursor-pointer transition-all group">
+              <span class="flex items-center gap-2">
+                <i class="fa-solid fa-upload text-blue-400"></i>
+                <span data-i18n="btn_restore_json">Restore From Backup (.JSON)</span>
+              </span>
+              <input type="file" id="importJsonInput" accept=".json" class="hidden">
+              <i class="fa-solid fa-chevron-left rtl:fa-chevron-left ltr:fa-chevron-right text-slate-500 group-hover:text-white transition-transform"></i>
+            </label>
+
+            <button id="btnExportCsv" class="w-full py-2.5 px-4 rounded-xl bg-dark-900 hover:bg-dark-850 border border-slate-700 text-white font-bold text-xs flex items-center justify-between transition-all group">
+              <span class="flex items-center gap-2">
+                <i class="fa-solid fa-file-excel text-emerald-400"></i>
+                <span data-i18n="btn_export_csv">Export Excel-Ready (.CSV with UTF-8 BOM)</span>
+              </span>
+              <i class="fa-solid fa-chevron-left rtl:fa-chevron-left ltr:fa-chevron-right text-slate-500 group-hover:text-white transition-transform"></i>
+            </button>
+
+            <button id="btnExportPdf" class="w-full py-2.5 px-4 rounded-xl bg-dark-900 hover:bg-dark-850 border border-slate-700 text-white font-bold text-xs flex items-center justify-between transition-all group">
+              <span class="flex items-center gap-2">
+                <i class="fa-solid fa-print text-purple-400"></i>
+                <span data-i18n="btn_print_pdf">Print Official Financial Report (PDF)</span>
+              </span>
+              <i class="fa-solid fa-chevron-left rtl:fa-chevron-left ltr:fa-chevron-right text-slate-500 group-hover:text-white transition-transform"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="glass-card rounded-2xl p-6 space-y-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center text-lg">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div>
+              <h3 class="font-bold text-white text-base" data-i18n="reset_title">Sample Data & Database Reset</h3>
+              <p class="text-xs text-slate-400" data-i18n="reset_sub">Quickly populate realistic sample records or wipe the database clean.</p>
+            </div>
+          </div>
+
+          <div class="space-y-3 pt-2">
+            <button id="btnLoadSampleData" class="w-full py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-750 border border-slate-700 text-slate-200 font-bold text-xs flex items-center justify-between transition-all">
+              <span class="flex items-center gap-2">
+                <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i>
+                <span data-i18n="btn_load_sample">Load Rich Sample Data</span>
+              </span>
+              <span class="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full" data-i18n="badge_demo">Demo</span>
+            </button>
+
+            <button id="btnOpenClearConfirm" class="w-full py-2.5 px-4 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 font-bold text-xs flex items-center justify-between transition-all">
+              <span class="flex items-center gap-2">
+                <i class="fa-solid fa-trash-can text-rose-400"></i>
+                <span data-i18n="btn_clear_all">Clear All Data & Start Fresh</span>
+              </span>
+              <span class="text-[10px] bg-rose-500/30 text-rose-200 px-2 py-0.5 rounded-full" data-i18n="badge_irreversible">Wipe</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- App Security & PIN Passcode Lock Card -->
+        <div class="md:col-span-2 glass-card rounded-2xl p-6 space-y-4 border border-indigo-500/30">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-lg">
+                <i class="fa-solid fa-shield-halved"></i>
+              </div>
+              <div>
+                <h3 class="font-bold text-white text-base" data-i18n="settings_security_title">Security & PIN Passcode Lock</h3>
+                <p class="text-xs text-slate-400" data-i18n="settings_security_desc">Protect your wallet from bystanders with a 4-digit security PIN passcode.</p>
+              </div>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer select-none">
+              <input type="checkbox" id="pinLockEnabledToggle" class="sr-only peer">
+              <div class="w-11 h-6 bg-dark-950 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600 border border-slate-700"></div>
+            </label>
+          </div>
+
+          <div id="pinSettingsBox" class="hidden pt-3 border-t border-slate-800 flex flex-wrap items-center justify-between gap-4">
+            <div class="space-y-1">
+              <label class="text-xs text-slate-300 font-semibold block" data-i18n="label_pin_code">4-Digit PIN Code:</label>
+              <div class="flex items-center gap-2">
+                <input type="password" maxlength="4" pattern="[0-9]*" inputmode="numeric" id="inputSettingsPin" placeholder="••••" class="bg-dark-950 text-white font-mono text-center text-base px-3 py-1.5 rounded-lg border border-slate-700 tracking-widest focus:outline-none focus:border-indigo-500 w-32">
+                <button type="button" id="btnSavePin" class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all" data-i18n="btn_set_pin">Save Security Settings</button>
+              </div>
+            </div>
+            <button type="button" id="btnManualLock" class="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-rose-950/40 text-slate-300 hover:text-rose-400 border border-slate-700 text-xs font-bold transition-all flex items-center gap-2">
+              <i class="fa-solid fa-lock text-xs"></i>
+              <span data-i18n="btn_lock_now">Lock Wallet Now</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+
+
+      <!-- Offline Security & Tech Specs Card -->
+      <div class="glass-card rounded-2xl p-6 border border-slate-800">
+        <h4 class="font-bold text-sm text-white mb-2 flex items-center gap-2">
+          <i class="fa-solid fa-shield-cat text-brand-400"></i>
+          <span data-i18n="specs_title">Security & Offline Architecture</span>
+        </h4>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs text-slate-400 pt-2">
+          <div class="bg-dark-900/80 p-3 rounded-xl border border-slate-800">
+            <strong class="text-slate-200 block mb-1">Local Storage Engine</strong>
+            IndexedDB (Database: <code class="text-brand-300">PureTechWalletDB</code>) with automatic synchronous fallback to <code class="text-brand-300">localStorage</code>.
+          </div>
+          <div class="bg-dark-900/80 p-3 rounded-xl border border-slate-800">
+            <strong class="text-slate-200 block mb-1">Zero Telemetry</strong>
+            No cloud APIs, no analytics pings, no cookies. All calculations run strictly in your browser thread.
+          </div>
+          <div class="bg-dark-900/80 p-3 rounded-xl border border-slate-800">
+            <strong class="text-slate-200 block mb-1">Excel Compatibility</strong>
+            CSV export includes <code class="text-brand-300">\uFEFF</code> UTF-8 Byte Order Mark to preserve Arabic & Spanish letters in Microsoft Excel.
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- MODALS -->
+
+  <!-- MODAL: ADD / EDIT TRANSACTION (PERSONAL INCOMES & OBLIGATIONS) -->
+  <div id="txModal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-dark-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl relative">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <h3 id="txModalTitle" class="font-bold text-white text-base">Add Transaction</h3>
+        <button type="button" aria-label="Close dialog" class="close-modal text-slate-400 hover:text-white text-sm">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="txForm" class="space-y-3.5">
+        <input type="hidden" id="txType" value="income">
+        <input type="hidden" id="txEditId" value="">
+
+        <div>
+          <label class="text-xs text-slate-400 block mb-1 font-semibold" data-i18n="modal_tx_title">Description / Title</label>
+          <input type="text" id="txTitleInput" data-i18n-placeholder="placeholder_tx_title" placeholder="e.g. Tech Company Salary / Apartment Rent" required class="w-full bg-dark-950 text-white text-xs px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-brand-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-xs text-slate-400 font-semibold" data-i18n="modal_tx_amount">Amount</label>
+              <select id="txCurrencySelect" class="bg-dark-900 text-brand-300 text-[10px] font-mono px-1 py-0.5 rounded border border-slate-700 focus:outline-none">
+                <option value="BASE" id="txCurrencyBaseOpt">EGP (Base)</option>
+                <option value="USD">USD ($)</option>
+                <option value="EUR">EUR (€)</option>
+              </select>
+            </div>
+            <input type="number" step="0.01" min="0" id="txAmountInput" required class="w-full bg-dark-950 text-white font-mono text-xs px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-brand-500">
+            <div id="txConversionInfo" class="text-[10px] text-slate-400 font-mono mt-1 hidden">
+              <span data-i18n="currency_converted_info">Base Equivalent:</span>
+              <span id="txConvertedVal" class="text-brand-300 font-bold">0.00</span>
+            </div>
+          </div>
+          <div>
+            <label class="text-xs text-slate-400 block mb-1 font-semibold" data-i18n="modal_tx_date">Date</label>
+            <input type="date" id="txDateInput" required class="w-full bg-dark-950 text-white text-xs px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-brand-500">
+          </div>
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label class="text-xs text-slate-400 font-semibold" data-i18n="modal_tx_category">Category</label>
+            <button type="button" id="btnToggleNewPersonalCat" class="text-[11px] text-brand-400 hover:text-brand-300 font-semibold transition-colors" data-i18n="btn_add_custom_cat">+ Custom Category</button>
+          </div>
+          <select id="txCategorySelect" class="w-full bg-dark-950 text-white text-xs px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-brand-500"></select>
+
+          <div id="newPersonalCatBox" class="hidden flex items-center gap-1.5 mt-2">
+            <input type="text" id="newPersonalCatInput" data-i18n-placeholder="custom_cat_placeholder" placeholder="New category name..." class="flex-1 bg-dark-950 text-white text-xs px-2.5 py-1.5 rounded-lg border border-slate-700 focus:outline-none focus:border-brand-500">
+            <button type="button" id="btnSavePersonalCat" class="bg-brand-500 hover:bg-brand-600 text-white text-xs px-3 py-1.5 rounded-lg font-bold transition-all">
+              <i class="fa-solid fa-plus"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="pt-2 flex items-center justify-end gap-2">
+          <button type="button" class="close-modal px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-all" data-i18n="btn_cancel">Cancel</button>
+          <button type="submit" class="px-4 py-2 rounded-lg bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold transition-all" data-i18n="btn_save">Save Transaction</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: REGISTER NEW ASSET -->
+  <div id="assetModal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-dark-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl relative">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <h3 id="assetModalTitle" class="font-bold text-white text-base" data-i18n="modal_asset_title">Register Asset</h3>
+        <button type="button" aria-label="Close dialog" class="close-modal text-slate-400 hover:text-white text-sm">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="assetForm" class="space-y-3.5">
+        <input type="hidden" id="assetEditId" value="">
+        <div>
+          <label class="text-xs text-slate-400 block mb-1 font-semibold" data-i18n="modal_asset_name">Asset Name</label>
+          <input type="text" id="assetNameInput" data-i18n-placeholder="placeholder_asset_name" placeholder="e.g. 50g Gold Bullion / 2000 USD / Apple Shares" required class="w-full bg-dark-950 text-white text-xs px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-brand-500">
+        </div>
+
+        <div>
+          <label class="text-xs text-slate-400 block mb-1 font-semibold" data-i18n="modal_asset_cat">Category</label>
+          <select id="assetCategorySelect" class="w-full bg-dark-950 text-white text-xs px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-brand-500">
+            <option value="usd">Foreign Currency (USD)</option>
+            <option value="eur">Foreign Currency (EUR)</option>
+            <option value="gold">Gold & Bullion (Grams)</option>
+            <option value="stocks">Stocks & ETFs (Shares)</option>
+            <option value="realestate">Real Estate & Property</option>
+            <option value="other">Other Assets</option>
+          </select>
+        </div>
+
+        <!-- Gold Karat Selector (Shows only when Category is Gold) -->
+        <div id="goldKaratBox" class="hidden">
+          <label class="text-xs text-amber-400 block mb-1 font-semibold flex items-center gap-1.5">
+            <i class="fa-solid fa-coins"></i>
+            <span data-i18n="gold_karat">Gold Karat</span>
+          </label>
+          <select id="assetGoldKaratSelect" class="w-full bg-dark-950 text-amber-300 font-mono text-xs px-3 py-2 rounded-lg border border-amber-500/40 focus:outline-none focus:border-amber-400">
+            <option value="24k" data-i18n="gold_24k">24K (Pure Gold 99.9%)</option>
+            <option value="21k" selected data-i18n="gold_21k">21K (Egyptian Standard 87.5%)</option>
+            <option value="18k" data-i18n="gold_18k">18K (Jewelry 75.0%)</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs text-slate-400 block mb-1 font-semibold" id="labelAssetQty" data-i18n="modal_asset_qty">Quantity / Grams</label>
+            <input type="number" step="0.01" min="0" id="assetQtyInput" required class="w-full bg-dark-950 text-white font-mono text-xs px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-brand-500">
+          </div>
+          <div>
+            <label class="text-xs text-slate-400 block mb-1 font-semibold" id="labelAssetPrice" data-i18n="modal_asset_unit_price">Unit Price (in base currency)</label>
+            <input type="number" step="0.01" min="0" id="assetUnitPriceInput" required class="w-full bg-dark-950 text-white font-mono text-xs px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-brand-500">
+          </div>
+        </div>
+
+        <div>
+          <label class="text-xs text-slate-400 block mb-1 font-semibold" id="labelAssetPurchasePrice" data-i18n="modal_asset_purchase_price">Original Purchase Price (Optional for ROI)</label>
+          <input type="number" step="0.01" min="0" id="assetPurchasePriceInput" data-i18n-placeholder="placeholder_purchase_price" placeholder="Same as unit price if empty" class="w-full bg-dark-950 text-white font-mono text-xs px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-brand-500">
+        </div>
+
+        <div class="pt-2 flex items-center justify-end gap-2">
+          <button type="button" class="close-modal px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-all" data-i18n="btn_cancel">Cancel</button>
+          <button type="submit" class="px-4 py-2 rounded-lg bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold transition-all" data-i18n="btn_save">Save Asset</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD CONTENT CREATOR CHANNEL -->
+  <div id="channelModal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-dark-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl relative">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <h3 id="channelModalTitle" class="font-bold text-white text-base" data-i18n="modal_channel_title">Add Creator Channel</h3>
+        <button type="button" aria-label="Close dialog" class="close-modal text-slate-400 hover:text-white text-sm">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="channelForm" class="space-y-3.5">
+        <input type="hidden" id="channelEditId" value="">
+        <div>
+          <label class="text-xs text-slate-400 block mb-1 font-semibold" data-i18n="modal_channel_platform">Platform</label>
+          <select id="channelPlatformSelect" class="w-full bg-dark-950 text-white text-xs px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-brand-500">
+            <option value="youtube">YouTube</option>
+            <option value="tiktok">TikTok</option>
+            <option value="instagram">Instagram</option>
+            <option value="facebook">Facebook</option>
+            <option value="twitch">Twitch / Kick</option>
+            <option value="x">X (Twitter)</option>
+            <option value="snapchat">Snapchat</option>
+            <option value="podcast">Podcast / Website</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="text-xs text-slate-400 block mb-1 font-semibold" data-i18n="modal_channel_name">Channel / Handle Name</label>
+          <input type="text" id="channelNameInput" data-i18n-placeholder="placeholder_channel_name" placeholder="e.g. @PureTechTutorials" required class="w-full bg-dark-950 text-white text-xs px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-brand-500">
+        </div>
+
+        <div class="pt-2 flex items-center justify-end gap-2">
+          <button type="button" class="close-modal px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-all" data-i18n="btn_cancel">Cancel</button>
+          <button type="submit" class="px-4 py-2 rounded-lg bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold transition-all" data-i18n="btn_save">Create Channel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: LOG CREATOR TRANSACTION -->
+  <div id="creatorTxModal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-dark-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl relative">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <h3 id="creatorTxModalTitle" class="font-bold text-white text-base" data-i18n="modal_creator_tx_title">Log Channel Transaction</h3>
+        <button type="button" aria-label="Close dialog" class="close-modal text-slate-400 hover:text-white text-sm">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="creatorTxForm" class="space-y-3.5">
+        <input type="hidden" id="creatorTxEditId" value="">
+        <div>
+          <label class="text-xs text-slate-400 block mb-1 font-semibold" data-i18n="modal_channel_select">Select Channel</label>
+          <select id="creatorTxChannelSelect" class="w-full bg-dark-950 text-white text-xs px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-brand-500"></select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs text-slate-400 block mb-1 font-semibold" data-i18n="modal_creator_flow">Flow Type</label>
+            <select id="creatorTxFlowSelect" class="w-full bg-dark-950 text-white text-xs px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-brand-500">
+              <option value="revenue" data-i18n="opt_revenue">Channel Revenue (+)</option>
+              <option value="expense" data-i18n="opt_expense">Production Expense (-)</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs text-slate-400 block mb-1 font-semibold" data-i18n="modal_tx_category">Category</label>
+            <select id="creatorTxCatSelect" class="w-full bg-dark-950 text-white text-xs px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-brand-500"></select>
+          </div>
+        </div>
+
+        <div>
+          <label class="text-xs text-slate-400 block mb-1 font-semibold" data-i18n="modal_tx_title">Title / Details</label>
+          <input type="text" id="creatorTxTitleInput" data-i18n-placeholder="placeholder_creator_tx" placeholder="e.g. Brand Sponsorship for Episode 12" required class="w-full bg-dark-950 text-white text-xs px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-brand-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs text-slate-400 block mb-1 font-semibold" data-i18n="modal_tx_amount">Amount</label>
+            <input type="number" step="0.01" min="0" id="creatorTxAmountInput" required class="w-full bg-dark-950 text-white font-mono text-xs px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-brand-500">
+          </div>
+          <div>
+            <label class="text-xs text-slate-400 block mb-1 font-semibold" data-i18n="modal_tx_date">Date</label>
+            <input type="date" id="creatorTxDateInput" required class="w-full bg-dark-950 text-white text-xs px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-brand-500">
+          </div>
+        </div>
+
+        <div class="pt-2 flex items-center justify-end gap-2">
+          <button type="button" class="close-modal px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-all" data-i18n="btn_cancel">Cancel</button>
+          <button type="submit" class="px-4 py-2 rounded-lg bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold transition-all" data-i18n="btn_save">Save Entry</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: LOG FREELANCE TRANSACTION -->
+  <div id="freelanceTxModal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-dark-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl relative">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <h3 id="flTxModalTitle" class="font-bold text-white text-base" data-i18n="modal_fl_tx_title">Log Freelance Project / Expense</h3>
+        <button type="button" aria-label="Close dialog" class="close-modal text-slate-400 hover:text-white text-sm">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="freelanceTxForm" class="space-y-3.5">
+        <input type="hidden" id="flTxEditId" value="">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs text-slate-400 block mb-1 font-semibold" data-i18n="modal_creator_flow">Flow Type</label>
+            <select id="flTxFlowSelect" class="w-full bg-dark-950 text-white text-xs px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-indigo-500">
+              <option value="income" data-i18n="opt_fl_income">Freelance Payment (+)</option>
+              <option value="expense" data-i18n="opt_fl_expense">Tool / Server Cost (-)</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs text-slate-400 block mb-1 font-semibold" data-i18n="modal_tx_category">Custom Category</label>
+            <select id="flTxCategorySelect" class="w-full bg-dark-950 text-white text-xs px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-indigo-500"></select>
+          </div>
+        </div>
+
+        <div>
+          <label class="text-xs text-slate-400 block mb-1 font-semibold" data-i18n="modal_fl_project_title">Project / Client / Description</label>
+          <input type="text" id="flTxTitleInput" data-i18n-placeholder="placeholder_fl_tx" placeholder="e.g. Next.js SaaS Website Milestone 1" required class="w-full bg-dark-950 text-white text-xs px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-indigo-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-xs text-slate-400 font-semibold" data-i18n="modal_tx_amount">Amount</label>
+              <select id="flTxCurrencySelect" class="bg-dark-900 text-indigo-300 text-[10px] font-mono px-1 py-0.5 rounded border border-slate-700 focus:outline-none">
+                <option value="BASE" id="flCurrencyBaseOpt">EGP (Base)</option>
+                <option value="USD">USD ($)</option>
+                <option value="EUR">EUR (€)</option>
+              </select>
+            </div>
+            <input type="number" step="0.01" min="0" id="flTxAmountInput" required class="w-full bg-dark-950 text-white font-mono text-xs px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-indigo-500">
+            <div id="flConversionInfo" class="text-[10px] text-slate-400 font-mono mt-1 hidden">
+              <span data-i18n="currency_converted_info">Base Equivalent:</span>
+              <span id="flConvertedVal" class="text-indigo-300 font-bold">0.00</span>
+            </div>
+          </div>
+          <div>
+            <label class="text-xs text-slate-400 block mb-1 font-semibold" data-i18n="modal_tx_date">Date</label>
+            <input type="date" id="flTxDateInput" required class="w-full bg-dark-950 text-white text-xs px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-indigo-500">
+          </div>
+        </div>
+
+        <div class="pt-2 flex items-center justify-end gap-2">
+          <button type="button" class="close-modal px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-all" data-i18n="btn_cancel">Cancel</button>
+          <button type="submit" class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all" data-i18n="btn_save">Save Entry</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: SET MONTHLY BUDGET -->
+  <div id="budgetModal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-dark-900 border border-slate-700 rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-2xl relative">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <h3 class="font-bold text-white text-base" data-i18n="budget_title">Monthly Spending Budget Cap</h3>
+        <button type="button" aria-label="Close dialog" class="close-modal text-slate-400 hover:text-white text-sm">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="budgetForm" class="space-y-4">
+        <div>
+          <label class="text-xs text-slate-400 block mb-1 font-semibold" data-i18n="budget_limit">Budget Limit (in base currency)</label>
+          <input type="number" step="100" min="0" id="budgetLimitInput" placeholder="e.g. 25000" required class="w-full bg-dark-950 text-white font-mono text-sm px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-amber-500">
+        </div>
+        <div class="flex items-center gap-2">
+          <input type="checkbox" id="budgetEnabledToggle" class="accent-amber-500 rounded cursor-pointer" checked>
+          <label for="budgetEnabledToggle" class="text-xs text-slate-300 cursor-pointer font-medium">Enable budget tracking & alerts</label>
+        </div>
+
+        <div class="pt-2 flex items-center justify-end gap-2">
+          <button type="button" class="close-modal px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-all" data-i18n="btn_cancel">Cancel</button>
+          <button type="submit" class="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold transition-all" data-i18n="btn_save">Save Budget</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- CUSTOM CONFIRMATION MODAL -->
+  <div id="confirmModal" class="fixed inset-0 z-[110] bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-dark-900 border border-slate-700 rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-2xl text-center">
+      <div class="w-12 h-12 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center mx-auto text-xl">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+      <div>
+        <h3 id="confirmModalTitle" class="font-bold text-white text-base">Confirm Action</h3>
+        <p id="confirmModalMessage" class="text-xs text-slate-400 mt-1">Are you sure you want to proceed?</p>
+      </div>
+      <div class="flex items-center justify-center gap-2 pt-2">
+        <button type="button" id="btnConfirmCancel" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-all" data-i18n="btn_cancel">Cancel</button>
+        <button type="button" id="btnConfirmOk" class="px-5 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all" data-i18n="btn_confirm">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fullscreen App Lock Screen (Shown if PIN is enabled and not unlocked) -->
+  <div id="pinLockScreen" class="fixed inset-0 z-[100] bg-dark-950 flex flex-col items-center justify-center p-4 hidden">
+    <div class="max-w-xs w-full bg-dark-900 border border-slate-800 rounded-2xl p-6 text-center space-y-4 shadow-2xl">
+      <div class="w-14 h-14 mx-auto rounded-2xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
+        <i class="fa-solid fa-lock text-2xl"></i>
+      </div>
+      <div>
+        <h3 class="text-base font-bold text-white" data-i18n="pin_modal_title">Wallet Locked - Enter PIN</h3>
+        <p class="text-xs text-slate-400 mt-1">PureTech Wallet Secure Lock</p>
+      </div>
+      <form id="pinUnlockForm" class="space-y-3">
+        <input type="password" maxlength="4" pattern="[0-9]*" inputmode="numeric" id="pinUnlockInput" placeholder="••••" required class="w-36 mx-auto bg-dark-950 text-white font-mono text-center text-xl tracking-[0.5em] px-3 py-2 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500">
+        <div id="pinErrorMsg" class="text-xs text-rose-400 font-medium hidden" data-i18n="pin_incorrect">Incorrect PIN. Try again.</div>
+        <button type="submit" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-lg shadow-indigo-600/20">Unlock</button>
+        <div class="pt-2">
+          <button type="button" id="btnForgotPin" class="text-[11px] text-slate-500 hover:text-rose-400 underline transition-colors" data-i18n="btn_forgot_pin">Forgot PIN?</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toastContainer" role="status" aria-live="polite" class="fixed bottom-5 end-5 z-50 flex flex-col gap-2 pointer-events-none max-w-sm"></div>
+
+  <!-- Modular Application Scripts -->
+  <script src="js/i18n.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
