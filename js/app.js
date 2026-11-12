@@ -1755,6 +1755,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Modal Backdrop click dismissal
   document.querySelectorAll(".fixed").forEach(modal => {
     modal.addEventListener("click", (e) => {
+      if (modal.id === "pinLockScreen") return;
       if (e.target === modal) {
         modal.classList.add("hidden");
       }
@@ -1765,6 +1766,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   window.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
       document.querySelectorAll(".fixed:not(.hidden)").forEach(modal => {
+        if (modal.id === "pinLockScreen") return;
         modal.classList.add("hidden");
       });
     }

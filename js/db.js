@@ -107,6 +107,7 @@ function sanitizeState(raw) {
     if (typeof val === "number" && !isNaN(val)) return String(val).trim();
     return fallback;
   };
+  const cleanId = (val, fallback = "") => cleanString(val, fallback).replace(/[^a-zA-Z0-9_-]/g, "");
   const cleanNumber = (val, fallback = 0, min = 0) => {
     const num = Number(val);
     return (Number.isFinite(num) && num >= min) ? num : fallback;
@@ -129,7 +130,7 @@ function sanitizeState(raw) {
     const title = cleanString(item.title);
     if (!title || amount <= 0) return null;
     return {
-      id: cleanString(item.id, `inc-${Date.now()}-${idx}`),
+      id: cleanId(item.id, `inc-${Date.now()}-${idx}`),
       title: title || "Income",
       category: cleanString(item.category, "other"),
       amount,
@@ -146,7 +147,7 @@ function sanitizeState(raw) {
     const title = cleanString(item.title);
     if (!title || amount <= 0) return null;
     return {
-      id: cleanString(item.id, `exp-${Date.now()}-${idx}`),
+      id: cleanId(item.id, `exp-${Date.now()}-${idx}`),
       title: title || "Obligation",
       category: cleanString(item.category, "other"),
       amount,
@@ -165,7 +166,7 @@ function sanitizeState(raw) {
     const unitPrice = cleanNumber(item.unitPrice, 0, 0);
     const purchasePrice = cleanNumber(item.purchasePrice, unitPrice, 0);
     return {
-      id: cleanString(item.id, `ast-${Date.now()}-${idx}`),
+      id: cleanId(item.id, `ast-${Date.now()}-${idx}`),
       name,
       category: cleanString(item.category, "other"),
       quantity: qty,
@@ -180,7 +181,7 @@ function sanitizeState(raw) {
     const name = cleanString(item.name);
     if (!name) return null;
     return {
-      id: cleanString(item.id, `chn-${Date.now()}-${idx}`),
+      id: cleanId(item.id, `chn-${Date.now()}-${idx}`),
       platform: cleanString(item.platform, "youtube"),
       name
     };
@@ -192,7 +193,7 @@ function sanitizeState(raw) {
     const amount = cleanNumber(item.amount, 0, 0);
     if (!title || amount <= 0) return null;
     return {
-      id: cleanString(item.id, `ctx-${Date.now()}-${idx}`),
+      id: cleanId(item.id, `ctx-${Date.now()}-${idx}`),
       channelId: cleanString(item.channelId),
       flow: item.flow === "expense" ? "expense" : "revenue",
       category: cleanString(item.category, "other"),
@@ -208,7 +209,7 @@ function sanitizeState(raw) {
     const amount = cleanNumber(item.amount, 0, 0);
     if (!title || amount <= 0) return null;
     return {
-      id: cleanString(item.id, `flx-${Date.now()}-${idx}`),
+      id: cleanId(item.id, `flx-${Date.now()}-${idx}`),
       flow: item.flow === "expense" ? "expense" : "income",
       category: cleanString(item.category, "general"),
       title: title || "Freelance Tx",
