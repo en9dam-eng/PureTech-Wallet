@@ -3,7 +3,7 @@
  * Ensures 100% offline access by caching core assets and third-party CDNs
  */
 
-const CACHE_NAME = "puretech-wallet-cache-v17";
+const CACHE_NAME = "puretech-wallet-cache-v18";
 const STATIC_ASSETS = [
   "./",
   "./index.html",

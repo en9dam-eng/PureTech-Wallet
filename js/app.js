@@ -249,9 +249,9 @@ function calculateFinancials() {
     if (asset.category === "gold") {
       const base24k = Number(appState.rates.gold);
       const karat = asset.karat || "24k";
-      if (karat === "21k") currentUnitPrice = Math.round(base24k * (21 / 24));
-      else if (karat === "18k") currentUnitPrice = Math.round(base24k * (18 / 24));
-      else currentUnitPrice = base24k;
+      const factor = karat === "21k" ? (21 / 24) : (karat === "18k" ? (18 / 24) : 1);
+      const rawPrice = base24k * factor;
+      currentUnitPrice = base24k < 1000 ? Number(rawPrice.toFixed(2)) : Math.round(rawPrice);
     }
 
     const qty = Number(asset.quantity || 0);
@@ -400,9 +400,12 @@ function renderAll() {
   const data = calculateFinancials();
   const lang = appState.settings.lang;
 
-  document.getElementById("tickerUsd").textContent = Number(appState.rates.usd).toFixed(2);
-  document.getElementById("tickerEur").textContent = Number(appState.rates.eur).toFixed(2);
-  document.getElementById("tickerGold").textContent = Number(appState.rates.gold).toLocaleString("en-US");
+  const usdVal = Number(appState.rates.usd || 0);
+  const eurVal = Number(appState.rates.eur || 0);
+  const goldVal = Number(appState.rates.gold || 0);
+  document.getElementById("tickerUsd").textContent = (usdVal > 0 && usdVal < 1) ? usdVal.toFixed(3) : usdVal.toFixed(2);
+  document.getElementById("tickerEur").textContent = (eurVal > 0 && eurVal < 1) ? eurVal.toFixed(3) : eurVal.toFixed(2);
+  document.getElementById("tickerGold").textContent = goldVal.toLocaleString("en-US", { minimumFractionDigits: (goldVal > 0 && goldVal < 1000) ? 2 : 0, maximumFractionDigits: 2 });
   document.getElementById("currencySelect").value = appState.settings.currency;
 
   document.getElementById("rateInputUsd").value = appState.rates.usd;
@@ -691,9 +694,9 @@ function renderAll() {
       if (ast.category === "gold") {
         const base24k = Number(appState.rates.gold);
         const karat = ast.karat || "24k";
-        if (karat === "21k") unitPrice = Math.round(base24k * (21 / 24));
-        else if (karat === "18k") unitPrice = Math.round(base24k * (18 / 24));
-        else unitPrice = base24k;
+        const factor = karat === "21k" ? (21 / 24) : (karat === "18k" ? (18 / 24) : 1);
+        const rawPrice = base24k * factor;
+        unitPrice = base24k < 1000 ? Number(rawPrice.toFixed(2)) : Math.round(rawPrice);
         isLockedRate = true;
       }
 
@@ -1450,10 +1453,10 @@ async function fetchLiveMarketRates(isManual = false) {
       console.warn("Spot gold API fallback:", e);
     }
 
-    if (usdInBase && usdInBase > 0) appState.rates.usd = Number(usdInBase.toFixed(2));
-    if (eurInBase && eurInBase > 0) appState.rates.eur = Number(eurInBase.toFixed(2));
+    if (usdInBase && usdInBase > 0) appState.rates.usd = usdInBase < 1 ? Number(usdInBase.toFixed(3)) : Number(usdInBase.toFixed(2));
+    if (eurInBase && eurInBase > 0) appState.rates.eur = eurInBase < 1 ? Number(eurInBase.toFixed(3)) : Number(eurInBase.toFixed(2));
     if (goldGramInBase && goldGramInBase > 0) {
-      appState.rates.gold = baseCurr === "USD" || baseCurr === "EUR" ? Number(goldGramInBase.toFixed(2)) : Math.round(goldGramInBase);
+      appState.rates.gold = (baseCurr === "USD" || baseCurr === "EUR" || goldGramInBase < 1000) ? Number(goldGramInBase.toFixed(2)) : Math.round(goldGramInBase);
     }
 
     const now = new Date();
@@ -2640,7 +2643,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const karat = a.karat || "24k";
         const factor = karat === "21k" ? (21 / 24) : (karat === "18k" ? (18 / 24) : 1);
         const rawGoldPrice = base24k * factor;
-        unitPrice = (appState.settings.currency === "USD" || appState.settings.currency === "EUR")
+        unitPrice = (appState.settings.currency === "USD" || appState.settings.currency === "EUR" || base24k < 1000)
           ? Number(rawGoldPrice.toFixed(2))
           : Math.round(rawGoldPrice);
       }
