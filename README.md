@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 # 💎 PureTech Wallet | محفظة بيور تك المالية الذكية
 > **The Sovereign, Zero-Server, 100% Offline-First Wealth & Cashflow Operating System.**  
 > **نظام مالي متكامل لإدارة الثروة الشخصية، الأصول والاستثمار، صناع المحتوى، والعمل الحر — يعمل محلياً بالكامل 100% بدون خوادم.**  
