@@ -251,7 +251,7 @@ function sanitizeState(raw) {
       quantity: qty,
       unitPrice,
       purchasePrice,
-      karat: (item.category === "gold" && ["24k", "21k", "18k"].includes(item.karat)) ? item.karat : "24k"
+      karat: item.category === "gold" ? (["24k", "21k", "18k"].includes(item.karat) ? item.karat : "24k") : undefined
     };
   });
 

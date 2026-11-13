@@ -30,6 +30,7 @@
 
   <!-- PWA & Mobile Meta Tags -->
   <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.svg">
   <meta name="theme-color" content="#0f172a">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -953,16 +954,16 @@
         </h4>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs text-slate-400 pt-2">
           <div class="bg-dark-900/80 p-3 rounded-xl border border-slate-800">
-            <strong class="text-slate-200 block mb-1">Local Storage Engine</strong>
-            IndexedDB (Database: <code class="text-brand-300">PureTechWalletDB</code>) with automatic synchronous fallback to <code class="text-brand-300">localStorage</code>.
+            <strong class="text-slate-200 block mb-1" data-i18n="specs_card1_title">Local Storage Engine</strong>
+            <span data-i18n="specs_card1_desc">IndexedDB (Database: PureTechWalletDB) with automatic synchronous fallback to localStorage.</span>
           </div>
           <div class="bg-dark-900/80 p-3 rounded-xl border border-slate-800">
-            <strong class="text-slate-200 block mb-1">Zero Telemetry</strong>
-            No cloud APIs, no analytics pings, no cookies. All calculations run strictly in your browser thread.
+            <strong class="text-slate-200 block mb-1" data-i18n="specs_card2_title">Zero Telemetry</strong>
+            <span data-i18n="specs_card2_desc">No cloud APIs, no analytics pings, no cookies. All calculations run strictly in your browser thread.</span>
           </div>
           <div class="bg-dark-900/80 p-3 rounded-xl border border-slate-800">
-            <strong class="text-slate-200 block mb-1">Excel Compatibility</strong>
-            CSV export includes <code class="text-brand-300">\uFEFF</code> UTF-8 Byte Order Mark to preserve Arabic & Spanish letters in Microsoft Excel.
+            <strong class="text-slate-200 block mb-1" data-i18n="specs_card3_title">Excel Compatibility</strong>
+            <span data-i18n="specs_card3_desc">CSV export includes \uFEFF UTF-8 Byte Order Mark to preserve Arabic & Spanish letters in Microsoft Excel.</span>
           </div>
         </div>
       </div>
@@ -1057,12 +1058,12 @@
         <div>
           <label class="text-xs text-slate-400 block mb-1 font-semibold" data-i18n="modal_asset_cat">Category</label>
           <select id="assetCategorySelect" class="w-full bg-dark-950 text-white text-xs px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-brand-500">
-            <option value="usd">Foreign Currency (USD)</option>
-            <option value="eur">Foreign Currency (EUR)</option>
-            <option value="gold">Gold & Bullion (Grams)</option>
-            <option value="stocks">Stocks & ETFs (Shares)</option>
-            <option value="realestate">Real Estate & Property</option>
-            <option value="other">Other Assets</option>
+            <option value="usd" data-i18n="asset_opt_usd">Foreign Currency (USD)</option>
+            <option value="eur" data-i18n="asset_opt_eur">Foreign Currency (EUR)</option>
+            <option value="gold" data-i18n="asset_opt_gold">Gold & Bullion (Grams)</option>
+            <option value="stocks" data-i18n="asset_opt_stocks">Stocks & ETFs (Shares)</option>
+            <option value="realestate" data-i18n="asset_opt_realestate">Real Estate & Property</option>
+            <option value="other" data-i18n="asset_opt_other">Other Assets</option>
           </select>
         </div>
 
@@ -1275,7 +1276,7 @@
         </div>
         <div class="flex items-center gap-2">
           <input type="checkbox" id="budgetEnabledToggle" class="accent-amber-500 rounded cursor-pointer" checked>
-          <label for="budgetEnabledToggle" class="text-xs text-slate-300 cursor-pointer font-medium">Enable budget tracking & alerts</label>
+          <label for="budgetEnabledToggle" class="text-xs text-slate-300 cursor-pointer font-medium" data-i18n="budget_enable_alerts">Enable budget tracking & alerts</label>
         </div>
 
         <div class="pt-2 flex items-center justify-end gap-2">

@@ -7,6 +7,14 @@ let wealthChart = null;
 let pillarsChart = null;
 let trendsChart = null;
 
+// Helper for trilingual runtime texts (Arabic, English, Spanish)
+function tr(arText, enText, esText) {
+  const lang = appState?.settings?.lang || "en";
+  if (lang === "ar") return arText;
+  if (lang === "es") return esText || enText;
+  return enText;
+}
+
 // Toast Notification helper
 function showToast(message, type = "success") {
   const container = document.getElementById("toastContainer");
@@ -57,8 +65,14 @@ function formatMoney(amount, forceRaw = false) {
 }
 
 // Custom Confirmation Dialog
+let activeConfirmCleanup = null;
+
 function requestConfirmation(title, message) {
   return new Promise((resolve) => {
+    if (typeof activeConfirmCleanup === "function") {
+      activeConfirmCleanup(false);
+    }
+
     const modal = document.getElementById("confirmModal");
     const titleEl = document.getElementById("confirmModalTitle");
     const msgEl = document.getElementById("confirmModalMessage");
@@ -70,12 +84,14 @@ function requestConfirmation(title, message) {
     modal.classList.remove("hidden");
 
     const cleanup = (confirmed) => {
+      activeConfirmCleanup = null;
       modal.classList.add("hidden");
       btnOk.onclick = null;
       btnCancel.onclick = null;
       resolve(confirmed);
     };
 
+    activeConfirmCleanup = cleanup;
     btnOk.onclick = () => cleanup(true);
     btnCancel.onclick = () => cleanup(false);
   });
@@ -109,7 +125,7 @@ function renderPagination(containerId, target, currentPage, totalItems, pageSize
   if (totalItems <= pageSize) {
     container.innerHTML = totalItems > 0 
       ? `<div class="w-full flex items-center justify-between text-[11px] text-slate-500 font-mono py-1">
-           <span>${totalItems} ${(i18n[appState.settings.lang] || i18n.en).items_count?.replace("{count}", totalItems) || ''}</span>
+           <span>${(i18n[appState.settings.lang] || i18n.en).items_count?.replace("{count}", totalItems) || `(${totalItems} items)`}</span>
          </div>`
       : "";
     return;
@@ -551,8 +567,8 @@ function renderAll() {
   if (visibleIncomes.length === 0) {
     incList.innerHTML = `<div class="p-6 text-center text-xs text-slate-500">${
       periodIncomes.length === 0
-        ? (lang === 'ar' ? 'لا توجد مداخيل مسجلة في هذه الفترة' : 'No incomes logged in this period')
-        : (lang === 'ar' ? 'لا توجد نتائج مطابقة للبحث' : 'No matching results')
+        ? tr('لا توجد مداخيل مسجلة في هذه الفترة', 'No incomes logged in this period', 'No hay ingresos registrados en este período')
+        : tr('لا توجد نتائج مطابقة للبحث', 'No matching results', 'No hay resultados que coincidan')
     }</div>`;
   } else {
     incList.innerHTML = pagedIncomes.map((inc) => {
@@ -617,8 +633,8 @@ function renderAll() {
   if (visibleObligations.length === 0) {
     expList.innerHTML = `<div class="p-6 text-center text-xs text-slate-500">${
       periodObligations.length === 0
-        ? (lang === 'ar' ? 'لا توجد التزامات مسجلة في هذه الفترة' : 'No obligations logged in this period')
-        : (lang === 'ar' ? 'لا توجد نتائج مطابقة للبحث' : 'No matching results')
+        ? tr('لا توجد التزامات مسجلة في هذه الفترة', 'No obligations logged in this period', 'No hay obligaciones registradas en este período')
+        : tr('لا توجد نتائج مطابقة للبحث', 'No matching results', 'No hay resultados que coincidan')
     }</div>`;
   } else {
     expList.innerHTML = pagedObligations.map((exp) => {
@@ -664,7 +680,7 @@ function renderAll() {
   const pagedAssets = appState.assets.slice(astStart, astStart + astPageSize);
 
   if (appState.assets.length === 0) {
-    assetsBody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-slate-500 text-xs">${lang === 'ar' ? 'لا توجد أصول مسجلة حالياً' : 'No assets registered yet'}</td></tr>`;
+    assetsBody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-slate-500 text-xs">${tr('لا توجد أصول مسجلة حالياً', 'No assets registered yet', 'No hay activos registrados aún')}</td></tr>`;
   } else {
     const isPrivate = Boolean(appState?.settings?.privacyMode);
     assetsBody.innerHTML = pagedAssets.map((ast) => {
@@ -755,11 +771,11 @@ function renderAll() {
   document.getElementById("creatorTotalExp").textContent = formatMoney(data.creatorExp);
   document.getElementById("creatorNetProfit").textContent = formatMoney(data.creatorNet);
   const margin = data.creatorRev > 0 ? ((data.creatorNet / data.creatorRev) * 100).toFixed(1) : 0;
-  document.getElementById("creatorProfitMargin").textContent = `${lang === 'ar' ? 'هامش الربح' : 'Margin'}: ${margin}%`;
+  document.getElementById("creatorProfitMargin").textContent = `${tr('هامش الربح', 'Margin', 'Margen')}: ${margin}%`;
 
   const chnGrid = document.getElementById("channelsGrid");
   if (appState.channels.length === 0) {
-    chnGrid.innerHTML = `<div class="col-span-full p-6 text-center text-xs text-slate-500">${lang === 'ar' ? 'لا توجد قنوات مسجلة حالياً. اضغط قناة جديدة للبدء.' : 'No channels added yet.'}</div>`;
+    chnGrid.innerHTML = `<div class="col-span-full p-6 text-center text-xs text-slate-500">${tr('لا توجد قنوات مسجلة حالياً. اضغط قناة جديدة للبدء.', 'No channels added yet. Click New Channel to start.', 'No hay canales registrados aún. Haga clic en Nuevo Canal para comenzar.')}</div>`;
   } else {
     chnGrid.innerHTML = appState.channels.map((chn) => {
       const meta = platformMeta[chn.platform] || { icon: "fa-solid fa-play", color: "text-slate-200", bg: "bg-slate-700/20" };
@@ -853,7 +869,7 @@ function renderAll() {
   const pagedCreatorTx = filteredCreatorTx.slice(crtStart, crtStart + crtPageSize);
 
   if (filteredCreatorTx.length === 0) {
-    creatorTxList.innerHTML = `<div class="p-4 text-center text-xs text-slate-500">${lang === 'ar' ? 'لا توجد معاملات مسجلة' : 'No transactions recorded'}</div>`;
+    creatorTxList.innerHTML = `<div class="p-4 text-center text-xs text-slate-500">${tr('لا توجد معاملات مسجلة', 'No transactions recorded', 'No hay transacciones registradas')}</div>`;
   } else {
     creatorTxList.innerHTML = pagedCreatorTx.map(tx => {
       const chn = appState.channels.find(c => c.id === tx.channelId);
@@ -925,7 +941,7 @@ function renderAll() {
   const pagedFreelanceTx = appState.freelanceTransactions.slice(flStart, flStart + flPageSize);
 
   if (appState.freelanceTransactions.length === 0) {
-    flLedger.innerHTML = `<div class="p-6 text-center text-xs text-slate-500">${lang === 'ar' ? 'لا توجد معاملات مسجلة في مساحة العمل الحر' : 'No freelance records logged yet'}</div>`;
+    flLedger.innerHTML = `<div class="p-6 text-center text-xs text-slate-500">${tr('لا توجد معاملات مسجلة في مساحة العمل الحر', 'No freelance records logged yet', 'No hay registros de trabajo freelance aún')}</div>`;
   } else {
     flLedger.innerHTML = pagedFreelanceTx.map(tx => {
       const isInc = tx.flow === "income";
@@ -1240,7 +1256,7 @@ function updateAssetQtyInline(assetId, newQty) {
     asset.quantity = Math.max(0, parseFloat(newQty) || 0);
     persistState();
     renderAll();
-    showToast(appState.settings.lang === 'ar' ? 'تم تحديث كمية الأصل وصافي الثروة' : 'Asset quantity & Net Worth updated');
+    showToast(tr('تم تحديث كمية الأصل وصافي الثروة', 'Asset quantity & Net Worth updated', 'Cantidad de activo y patrimonio neto actualizados'));
   }
 }
 
@@ -1250,86 +1266,86 @@ function updateAssetPriceInline(assetId, newPrice) {
     asset.unitPrice = Math.max(0, parseFloat(newPrice) || 0);
     persistState();
     renderAll();
-    showToast(appState.settings.lang === 'ar' ? 'تم تحديث سعر الأصل وصافي الثروة' : 'Asset price & Net Worth updated');
+    showToast(tr('تم تحديث سعر الأصل وصافي الثروة', 'Asset price & Net Worth updated', 'Precio de activo y patrimonio neto actualizados'));
   }
 }
 
 async function deletePersonalIncome(id) {
   const ok = await requestConfirmation(
-    appState.settings.lang === 'ar' ? 'حذف مصدر الدخل' : 'Delete Income',
-    appState.settings.lang === 'ar' ? 'هل أنت متأكد من حذف هذا البند نهائياً؟' : 'Are you sure you want to permanently delete this income?'
+    tr('حذف مصدر الدخل', 'Delete Income', 'Eliminar ingreso'),
+    tr('هل أنت متأكد من حذف هذا البند نهائياً؟', 'Are you sure you want to permanently delete this income?', '¿Está seguro de que desea eliminar permanentemente este ingreso?')
   );
   if (ok) {
     appState.personalIncomes = appState.personalIncomes.filter(i => i.id !== id);
     await persistState();
     renderAll();
-    showToast(appState.settings.lang === 'ar' ? 'تم الحذف بنجاح' : 'Income deleted');
+    showToast(tr('تم الحذف بنجاح', 'Income deleted', 'Ingreso eliminado con éxito'));
   }
 }
 
 async function deletePersonalObligation(id) {
   const ok = await requestConfirmation(
-    appState.settings.lang === 'ar' ? 'حذف الالتزام المالي' : 'Delete Obligation',
-    appState.settings.lang === 'ar' ? 'هل أنت متأكد من حذف هذا الالتزام نهائياً؟' : 'Are you sure you want to permanently delete this obligation?'
+    tr('حذف الالتزام المالي', 'Delete Obligation', 'Eliminar compromiso'),
+    tr('هل أنت متأكد من حذف هذا الالتزام نهائياً؟', 'Are you sure you want to permanently delete this obligation?', '¿Está seguro de que desea eliminar este compromiso financiero?')
   );
   if (ok) {
     appState.personalObligations = appState.personalObligations.filter(o => o.id !== id);
     await persistState();
     renderAll();
-    showToast(appState.settings.lang === 'ar' ? 'تم الحذف بنجاح' : 'Obligation deleted');
+    showToast(tr('تم الحذف بنجاح', 'Obligation deleted', 'Compromiso eliminado con éxito'));
   }
 }
 
 async function deleteAsset(id) {
   const ok = await requestConfirmation(
-    appState.settings.lang === 'ar' ? 'حذف الأصل' : 'Delete Asset',
-    appState.settings.lang === 'ar' ? 'هل أنت متأكد من حذف هذا الأصل من محفظتك؟' : 'Are you sure you want to delete this asset?'
+    tr('حذف الأصل', 'Delete Asset', 'Eliminar activo'),
+    tr('هل أنت متأكد من حذف هذا الأصل من محفظتك؟', 'Are you sure you want to delete this asset?', '¿Está seguro de que desea eliminar este activo?')
   );
   if (ok) {
     appState.assets = appState.assets.filter(a => a.id !== id);
     await persistState();
     renderAll();
-    showToast(appState.settings.lang === 'ar' ? 'تم حذف الأصل وإعادة تقييم الثروة' : 'Asset deleted');
+    showToast(tr('تم حذف الأصل وإعادة تقييم الثروة', 'Asset deleted', 'Activo eliminado'));
   }
 }
 
 async function deleteChannel(id) {
   const ok = await requestConfirmation(
-    appState.settings.lang === 'ar' ? 'حذف القناة' : 'Delete Channel',
-    appState.settings.lang === 'ar' ? 'سيتم حذف القناة وكافة العمليات المرتبطة بها!' : 'Deleting this channel will remove all its related transactions!'
+    tr('حذف القناة', 'Delete Channel', 'Eliminar canal'),
+    tr('سيتم حذف القناة وكافة العمليات المرتبطة بها!', 'Deleting this channel will remove all its related transactions!', '¡Al eliminar este canal se eliminarán todas sus transacciones relacionadas!')
   );
   if (ok) {
     appState.channels = appState.channels.filter(c => c.id !== id);
     appState.creatorTransactions = appState.creatorTransactions.filter(t => t.channelId !== id);
     await persistState();
     renderAll();
-    showToast(appState.settings.lang === 'ar' ? 'تم حذف القناة وبياناتها' : 'Channel & transactions removed');
+    showToast(tr('تم حذف القناة وبياناتها', 'Channel & transactions removed', 'Canal y transacciones eliminados'));
   }
 }
 
 async function deleteCreatorTx(id) {
   const ok = await requestConfirmation(
-    appState.settings.lang === 'ar' ? 'حذف المعاملة' : 'Delete Transaction',
-    appState.settings.lang === 'ar' ? 'هل أنت متأكد من حذف هذه المعاملة؟' : 'Are you sure you want to delete this transaction?'
+    tr('حذف المعاملة', 'Delete Transaction', 'Eliminar transacción'),
+    tr('هل أنت متأكد من حذف هذه المعاملة؟', 'Are you sure you want to delete this transaction?', '¿Está seguro de que desea eliminar esta transacción?')
   );
   if (ok) {
     appState.creatorTransactions = appState.creatorTransactions.filter(t => t.id !== id);
     await persistState();
     renderAll();
-    showToast(appState.settings.lang === 'ar' ? 'تم الحذف' : 'Transaction deleted');
+    showToast(tr('تم الحذف', 'Transaction deleted', 'Transacción eliminada'));
   }
 }
 
 async function deleteFreelanceTx(id) {
   const ok = await requestConfirmation(
-    appState.settings.lang === 'ar' ? 'حذف عملية العمل الحر' : 'Delete Freelance Entry',
-    appState.settings.lang === 'ar' ? 'هل أنت متأكد من حذف هذا السجل؟' : 'Are you sure you want to delete this entry?'
+    tr('حذف عملية العمل الحر', 'Delete Freelance Entry', 'Eliminar entrada de freelance'),
+    tr('هل أنت متأكد من حذف هذا السجل؟', 'Are you sure you want to delete this entry?', '¿Está seguro de que desea eliminar esta entrada?')
   );
   if (ok) {
     appState.freelanceTransactions = appState.freelanceTransactions.filter(t => t.id !== id);
     await persistState();
     renderAll();
-    showToast(appState.settings.lang === 'ar' ? 'تم الحذف' : 'Entry deleted');
+    showToast(tr('تم الحذف', 'Entry deleted', 'Entrada eliminada'));
   }
 }
 
@@ -1338,7 +1354,7 @@ function removeFreelanceCategory(type, catName) {
     appState.freelanceCats[type] = appState.freelanceCats[type].filter(c => c !== catName);
     persistState();
     renderAll();
-    showToast(appState.settings.lang === 'ar' ? 'تم حذف التصنيف' : 'Category removed');
+    showToast(tr('تم حذف التصنيف', 'Category removed', 'Categoría eliminada'));
   }
 }
 
@@ -1571,7 +1587,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (lockScreen) lockScreen.classList.remove("hidden");
     if (inp) inp.focus();
     const lang = appState?.settings?.lang || "ar";
-    showToast(lang === 'ar' ? 'تم قفل المحفظة' : 'Wallet locked', 'info');
+    showToast(tr('تم قفل المحفظة', 'Wallet locked', 'Billetera bloqueada'), 'info');
   }
 
   document.getElementById("btnQuickLock")?.addEventListener("click", lockWalletNow);
@@ -1603,7 +1619,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const dict = i18n[lang] || i18n.en;
 
     if (!/^\d{4}$/.test(pinVal)) {
-      showToast(lang === 'ar' ? 'يرجى إدخال رمز PIN مكون من 4 أرقام عددية' : 'Please enter a 4-digit numeric PIN', 'error');
+      showToast(tr('يرجى إدخال رمز PIN مكون من 4 أرقام عددية', 'Please enter a 4-digit numeric PIN', 'Ingrese un código PIN de 4 dígitos numéricos'), 'error');
       return;
     }
 
@@ -1704,7 +1720,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.getElementById("btnSaveRole").addEventListener("click", () => {
     appState.settings.freelanceRole = document.getElementById("freelanceRoleInput").value.trim();
     persistState();
-    showToast(appState.settings.lang === 'ar' ? 'تم حفظ المسمى الوظيفي' : 'Role title saved');
+    showToast(tr('تم حفظ المسمى الوظيفي', 'Role title saved', 'Título profesional guardado'));
   });
 
   document.getElementById("btnAddIncomeCat").addEventListener("click", () => {
@@ -1715,7 +1731,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       inp.value = "";
       persistState();
       renderAll();
-      showToast(appState.settings.lang === 'ar' ? 'تمت إضافة التصنيف' : 'Category added');
+      showToast(tr('تمت إضافة التصنيف', 'Category added', 'Categoría agregada'));
     }
   });
   document.getElementById("btnAddExpenseCat").addEventListener("click", () => {
@@ -1726,7 +1742,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       inp.value = "";
       persistState();
       renderAll();
-      showToast(appState.settings.lang === 'ar' ? 'تمت إضافة التصنيف' : 'Category added');
+      showToast(tr('تمت إضافة التصنيف', 'Category added', 'Categoría agregada'));
     }
   });
 
@@ -1735,15 +1751,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     renderAll();
   });
 
+  function renderPersonalTab() {
+    renderAll();
+  }
+
   const onIncomesSearch = debounce(() => {
     paginationState.incomesPage = 1;
-    renderPersonalTab();
+    renderAll();
   }, 180);
   document.getElementById("searchIncomesInput")?.addEventListener("input", onIncomesSearch);
 
   const onObligationsSearch = debounce(() => {
     paginationState.obligationsPage = 1;
-    renderPersonalTab();
+    renderAll();
   }, 180);
   document.getElementById("searchObligationsInput")?.addEventListener("input", onObligationsSearch);
 
@@ -1759,7 +1779,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     modal.addEventListener("click", (e) => {
       if (modal.id === "pinLockScreen") return;
       if (e.target === modal) {
-        modal.classList.add("hidden");
+        if (modal.id === "confirmModal" && typeof activeConfirmCleanup === "function") {
+          activeConfirmCleanup(false);
+        } else {
+          modal.classList.add("hidden");
+        }
       }
     });
   });
@@ -1769,14 +1793,23 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (e.key === "Escape") {
       document.querySelectorAll(".fixed:not(.hidden)").forEach(modal => {
         if (modal.id === "pinLockScreen") return;
-        modal.classList.add("hidden");
+        if (modal.id === "confirmModal" && typeof activeConfirmCleanup === "function") {
+          activeConfirmCleanup(false);
+        } else {
+          modal.classList.add("hidden");
+        }
       });
     }
   });
 
   document.querySelectorAll(".close-modal").forEach(btn => {
     btn.addEventListener("click", () => {
-      btn.closest(".fixed").classList.add("hidden");
+      const modal = btn.closest(".fixed");
+      if (modal?.id === "confirmModal" && typeof activeConfirmCleanup === "function") {
+        activeConfirmCleanup(false);
+      } else if (modal) {
+        modal.classList.add("hidden");
+      }
     });
   });
 
@@ -1925,7 +1958,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       populatePersonalCats(type, val);
       inp.value = "";
       document.getElementById("newPersonalCatBox")?.classList.add("hidden");
-      showToast(appState.settings.lang === 'ar' ? 'تمت إضافة التصنيف المخصص' : 'Custom category added');
+      showToast(tr('تمت إضافة التصنيف المخصص', 'Custom category added', 'Categoría personalizada agregada'));
     }
   });
 
@@ -1945,7 +1978,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Defensive input validation
     if (!title || isNaN(rawAmount) || rawAmount <= 0) {
-      showToast(lang === 'ar' ? 'يرجى إدخال وصف ومبلغ صحيح أكبر من الصفر' : 'Please enter a valid title and amount greater than zero', 'error');
+      showToast(tr('يرجى إدخال وصف ومبلغ صحيح أكبر من الصفر', 'Please enter a valid title and amount greater than zero', 'Ingrese una descripción y un monto válidos mayores a cero'), 'error');
       return;
     }
 
@@ -1979,7 +2012,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         item.foreignAmount = foreignAmount;
         item.exchangeRate = exchangeRate;
       }
-      showToast(lang === 'ar' ? 'تم تعديل المعاملة بنجاح' : 'Transaction updated');
+      showToast(tr('تم تعديل المعاملة بنجاح', 'Transaction updated', 'Transacción actualizada con éxito'));
     } else {
       const item = {
         id: `${isIncome ? 'inc' : 'exp'}-${Date.now()}`,
@@ -1998,7 +2031,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         appState.personalObligations.unshift(item);
         paginationState.obligationsPage = 1;
       }
-      showToast(lang === 'ar' ? 'تم تسجيل المعاملة بنجاح' : 'Transaction saved');
+      showToast(tr('تم تسجيل المعاملة بنجاح', 'Transaction saved', 'Transacción guardada con éxito'));
     }
 
     await persistState();
@@ -2037,6 +2070,12 @@ document.addEventListener("DOMContentLoaded", async () => {
       goldKaratBox?.classList.remove("hidden");
       if (assetGoldKaratSelect) assetGoldKaratSelect.value = ast.karat || "24k";
       assetUnitPriceInput.value = getCalculatedGoldRate(ast.karat || "24k");
+    } else if (ast.category === "usd") {
+      goldKaratBox?.classList.add("hidden");
+      assetUnitPriceInput.value = appState.rates.usd;
+    } else if (ast.category === "eur") {
+      goldKaratBox?.classList.add("hidden");
+      assetUnitPriceInput.value = appState.rates.eur;
     } else {
       goldKaratBox?.classList.add("hidden");
       assetUnitPriceInput.value = ast.unitPrice;
@@ -2103,7 +2142,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Defensive validation
     if (!name || isNaN(quantity) || quantity <= 0 || isNaN(unitPrice) || unitPrice < 0) {
-      showToast(lang === 'ar' ? 'يرجى إدخال اسم الأصل وكمية وسعر صحيحين (الكمية أكبر من الصفر)' : 'Please enter valid asset details (quantity must be > 0)', 'error');
+      showToast(tr('يرجى إدخال اسم الأصل وكمية وسعر صحيحين (الكمية أكبر من الصفر)', 'Please enter valid asset details (quantity must be > 0)', 'Ingrese detalles válidos del activo (la cantidad debe ser > 0)'), 'error');
       return;
     }
 
@@ -2117,7 +2156,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         ast.karat = karat;
         ast.purchasePrice = purchasePrice;
       }
-      showToast((i18n[lang] || i18n.en).asset_updated || (lang === 'ar' ? 'تم تعديل الأصل بنجاح' : 'Asset updated'));
+      showToast((i18n[lang] || i18n.en).asset_updated || tr('تم تعديل الأصل بنجاح', 'Asset updated', 'Activo actualizado con éxito'));
     } else {
       const item = {
         id: `ast-${Date.now()}`,
@@ -2130,7 +2169,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       };
       appState.assets.push(item);
       paginationState.assetsPage = 1;
-      showToast(lang === 'ar' ? 'تم تسجيل الأصل وحساب صافي الثروة والعائد' : 'Asset added & Net Worth recalculated');
+      showToast(tr('تم تسجيل الأصل وحساب صافي الثروة والعائد', 'Asset added & Net Worth recalculated', 'Activo registrado y patrimonio recalculado'));
     }
 
     await persistState();
@@ -2178,7 +2217,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         chn.platform = platform;
         chn.name = name;
       }
-      showToast((i18n[lang] || i18n.en).channel_updated || (lang === 'ar' ? 'تم تعديل بيانات القناة بنجاح' : 'Channel updated'));
+      showToast((i18n[lang] || i18n.en).channel_updated || tr('تم تعديل بيانات القناة بنجاح', 'Channel updated', 'Canal actualizado con éxito'));
     } else {
       const chn = {
         id: `chn-${Date.now()}`,
@@ -2186,7 +2225,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         name
       };
       appState.channels.push(chn);
-      showToast(lang === 'ar' ? 'تم إنشاء القناة' : 'Channel created');
+      showToast(tr('تم إنشاء القناة', 'Channel created', 'Canal creado con éxito'));
     }
 
     await persistState();
@@ -2228,7 +2267,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   document.getElementById("btnOpenAddCreatorTx").addEventListener("click", () => {
     if (appState.channels.length === 0) {
-      showToast(appState.settings.lang === 'ar' ? 'يرجى إنشاء قناة أولاً' : 'Please add a channel first', 'error');
+      showToast(tr('يرجى إنشاء قناة أولاً', 'Please add a channel first', 'Agregue un canal primero'), 'error');
       return;
     }
     const lang = appState.settings.lang;
@@ -2259,7 +2298,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Defensive input validation
     if (!title || isNaN(amount) || amount <= 0) {
-      showToast(lang === 'ar' ? 'يرجى إدخال وصف ومبلغ صحيح أكبر من الصفر' : 'Please enter a valid title and amount greater than zero', 'error');
+      showToast(tr('يرجى إدخال وصف ومبلغ صحيح أكبر من الصفر', 'Please enter a valid title and amount greater than zero', 'Ingrese una descripción y un monto válidos mayores a cero'), 'error');
       return;
     }
 
@@ -2273,7 +2312,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         tx.amount = amount;
         tx.date = date;
       }
-      showToast((i18n[lang] || i18n.en).creator_tx_updated || (lang === 'ar' ? 'تم تعديل المعاملة بنجاح' : 'Transaction updated'));
+      showToast((i18n[lang] || i18n.en).creator_tx_updated || tr('تم تعديل المعاملة بنجاح', 'Transaction updated', 'Transacción actualizada con éxito'));
     } else {
       const tx = {
         id: `ctx-${Date.now()}`,
@@ -2286,7 +2325,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       };
       appState.creatorTransactions.unshift(tx);
       paginationState.creatorTxPage = 1;
-      showToast(lang === 'ar' ? 'تم تسجيل المعاملة بالقناة' : 'Channel entry saved');
+      showToast(tr('تم تسجيل المعاملة بالقناة', 'Channel entry saved', 'Transacción registrada en el canal'));
     }
 
     await persistState();
@@ -2385,7 +2424,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Defensive input validation
     if (!title || isNaN(rawAmount) || rawAmount <= 0) {
-      showToast(lang === 'ar' ? 'يرجى إدخال وصف ومبلغ صحيح أكبر من الصفر' : 'Please enter a valid title and amount greater than zero', 'error');
+      showToast(tr('يرجى إدخال وصف ومبلغ صحيح أكبر من الصفر', 'Please enter a valid title and amount greater than zero', 'Ingrese una descripción y un monto válidos mayores a cero'), 'error');
       return;
     }
 
@@ -2419,7 +2458,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         tx.foreignAmount = foreignAmount;
         tx.exchangeRate = exchangeRate;
       }
-      showToast((i18n[lang] || i18n.en).fl_tx_updated || (lang === 'ar' ? 'تم تعديل معاملة العمل الحر بنجاح' : 'Freelance transaction updated'));
+      showToast((i18n[lang] || i18n.en).fl_tx_updated || tr('تم تعديل معاملة العمل الحر بنجاح', 'Freelance transaction updated', 'Transacción freelance actualizada con éxito'));
     } else {
       const tx = {
         id: `flx-${Date.now()}`,
@@ -2434,7 +2473,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       };
       appState.freelanceTransactions.unshift(tx);
       paginationState.freelanceTxPage = 1;
-      showToast(lang === 'ar' ? 'تم تسجيل عملية العمل الحر' : 'Freelance entry saved');
+      showToast(tr('تم تسجيل عملية العمل الحر', 'Freelance entry saved', 'Entrada de freelance guardada'));
     }
 
     await persistState();
@@ -2463,8 +2502,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     await persistState();
     budgetModal.classList.add("hidden");
     renderAll();
-    const lang = appState.settings.lang;
-    showToast(lang === 'ar' ? 'تم تحديث سقف الميزانية الشهرية' : 'Monthly budget updated');
+    showToast(tr('تم تحديث سقف الميزانية الشهرية', 'Monthly budget updated', 'Presupuesto mensual actualizado'));
   });
 
   // Quick Recurring Obligations Clone Handler
@@ -2488,20 +2526,22 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     if (!sourceMonth) {
-      showToast(lang === 'ar' ? 'لا توجد التزامات مسجلة في أشهر سابقة لنسخها' : 'No previous monthly obligations found to clone', 'info');
+      showToast(tr('لا توجد التزامات مسجلة في أشهر سابقة لنسخها', 'No previous monthly obligations found to clone', 'No se encontraron obligaciones mensuales previas para clonar'), 'info');
       return;
     }
 
     const prevItems = appState.personalObligations.filter(o => o.date && o.date.startsWith(sourceMonth));
     if (prevItems.length === 0) {
-      showToast(lang === 'ar' ? 'لا توجد التزامات في الشهر المصدر' : 'No obligations found in source month', 'info');
+      showToast(tr('لا توجد التزامات في الشهر المصدر', 'No obligations found in source month', 'No se encontraron obligaciones en el mes de origen'), 'info');
       return;
     }
 
-    const titleMsg = lang === 'ar' ? 'استنساخ الالتزامات الشهرية' : 'Clone Monthly Obligations';
-    const textMsg = lang === 'ar'
-      ? `هل تريد استنساخ ${prevItems.length} التزام من شهر (${sourceMonth}) إلى شهر (${currentPeriod})؟`
-      : `Clone ${prevItems.length} recurring obligations from (${sourceMonth}) into (${currentPeriod})?`;
+    const titleMsg = tr('استنساخ الالتزامات الشهرية', 'Clone Monthly Obligations', 'Clonar Obligaciones Mensuales');
+    const textMsg = tr(
+      `هل تريد استنساخ ${prevItems.length} التزام من شهر (${sourceMonth}) إلى شهر (${currentPeriod})؟`,
+      `Clone ${prevItems.length} recurring obligations from (${sourceMonth}) into (${currentPeriod})?`,
+      `¿Desea clonar ${prevItems.length} obligaciones recurrentes de (${sourceMonth}) a (${currentPeriod})?`
+    );
 
     const ok = await requestConfirmation(titleMsg, textMsg);
     if (!ok) return;
@@ -2527,7 +2567,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     await persistState();
     trackOperationAndRemind();
     renderAll();
-    showToast(lang === 'ar' ? `تم استنساخ ${clonedCount} التزام بنجاح إلى شهر ${currentPeriod}` : `Cloned ${clonedCount} obligations to ${currentPeriod}`);
+    showToast(tr(`تم استنساخ ${clonedCount} التزام بنجاح إلى شهر ${currentPeriod}`, `Cloned ${clonedCount} obligations to ${currentPeriod}`, `Se clonaron ${clonedCount} compromisos con éxito a ${currentPeriod}`));
   });
 
   document.getElementById("btnExportJson").addEventListener("click", () => {
@@ -2538,7 +2578,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     a.download = `PureTech_Wallet_Backup_${new Date().toISOString().split("T")[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    showToast(appState.settings.lang === 'ar' ? 'تم تحميل ملف النسخة الاحتياطية بنجاح' : 'Backup JSON exported successfully');
+    showToast(tr('تم تحميل ملف النسخة الاحتياطية بنجاح', 'Backup JSON exported successfully', 'Copia de seguridad JSON descargada con éxito'));
   });
 
   document.getElementById("importJsonInput").addEventListener("change", (e) => {
@@ -2554,7 +2594,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           updateLanguageUI();
           renderAll();
           checkPinSecurityOnStartup();
-          showToast(appState.settings.lang === 'ar' ? 'تمت استعادة البيانات وتنقيتها بنجاح' : 'Database restored and sanitized successfully');
+          showToast(tr('تمت استعادة البيانات وتنقيتها بنجاح', 'Database restored and sanitized successfully', 'Base de datos restaurada y saneada con éxito'));
         } else {
           showToast("Invalid PureTech Wallet JSON format", "error");
         }
@@ -2595,9 +2635,18 @@ document.addEventListener("DOMContentLoaded", async () => {
       let unitPrice = Number(a.unitPrice || 0);
       if (a.category === "usd") unitPrice = Number(appState.rates.usd || 0);
       if (a.category === "eur") unitPrice = Number(appState.rates.eur || 0);
-      if (a.category === "gold") unitPrice = Number(appState.rates.gold || 0);
+      if (a.category === "gold") {
+        const base24k = Number(appState.rates.gold || 0);
+        const karat = a.karat || "24k";
+        const factor = karat === "21k" ? (21 / 24) : (karat === "18k" ? (18 / 24) : 1);
+        const rawGoldPrice = base24k * factor;
+        unitPrice = (appState.settings.currency === "USD" || appState.settings.currency === "EUR")
+          ? Number(rawGoldPrice.toFixed(2))
+          : Math.round(rawGoldPrice);
+      }
       const total = Number(a.quantity || 0) * unitPrice;
-      csvContent += `${sanitizeCsvCell("Asset")},${sanitizeCsvCell(a.category)},${sanitizeCsvCell(a.name)},${sanitizeCsvCell(total)},${sanitizeCsvCell(`Qty: ${a.quantity}`)},${sanitizeCsvCell(appState.settings.currency)},${sanitizeCsvCell("")},${sanitizeCsvCell("")}\n`;
+      const catLabel = a.category === "gold" ? `gold (${(a.karat || "24k").toUpperCase()})` : a.category;
+      csvContent += `${sanitizeCsvCell("Asset")},${sanitizeCsvCell(catLabel)},${sanitizeCsvCell(a.name)},${sanitizeCsvCell(total)},${sanitizeCsvCell(`Qty: ${a.quantity}`)},${sanitizeCsvCell(appState.settings.currency)},${sanitizeCsvCell("")},${sanitizeCsvCell("")}\n`;
     });
     appState.creatorTransactions.forEach(t => {
       const isRev = t.flow === "revenue";
@@ -2619,13 +2668,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     a.download = `PureTech_Wallet_Ledger_${new Date().toISOString().split("T")[0]}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    showToast(appState.settings.lang === 'ar' ? 'تم تصدير ملف الإكسيل بنجاح' : 'Excel CSV exported successfully');
+    showToast(tr('تم تصدير ملف الإكسيل بنجاح', 'Excel CSV exported successfully', 'Archivo Excel CSV exportado con éxito'));
   });
 
   document.getElementById("btnExportPdf")?.addEventListener("click", () => {
     const overviewTab = document.querySelector('[data-tab="tab-overview"]');
     if (overviewTab) overviewTab.click();
-    showToast(appState.settings.lang === 'ar' ? 'جاري تجهيز التقرير المالي للطباعة / التصدير كـ PDF...' : 'Preparing financial statement for print / PDF...', 'info');
+    showToast(tr('جاري تجهيز التقرير المالي للطباعة / التصدير كـ PDF...', 'Preparing financial statement for print / PDF...', 'Preparando informe financiero para imprimir / PDF...'), 'info');
     setTimeout(() => {
       window.print();
     }, 450);
@@ -2633,7 +2682,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   window.addEventListener("online", () => {
     updateOnlineStatusUI();
-    showToast(appState.settings.lang === 'ar' ? 'تم الاتصال بالإنترنت - الأسعار جاهزة للتحديث' : 'Network restored (Online)', 'info');
+    showToast(tr('تم الاتصال بالإنترنت - الأسعار جاهزة للتحديث', 'Network restored (Online)', 'Conexión a internet restaurada'), 'info');
     if (appState.settings.autoSyncRates !== false) {
       fetchLiveMarketRates(false);
     }
@@ -2641,7 +2690,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   window.addEventListener("offline", () => {
     updateOnlineStatusUI();
-    showToast(appState.settings.lang === 'ar' ? 'وضع عدم الاتصال: يعمل محلياً 100% بأمان' : 'Offline Mode: Running 100% locally', 'info');
+    showToast(tr('وضع عدم الاتصال: يعمل محلياً 100% بأمان', 'Offline Mode: Running 100% locally', 'Modo sin conexión: Funcionando 100% local'), 'info');
   });
 
   document.getElementById("btnLoadSampleData").addEventListener("click", async () => {

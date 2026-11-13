@@ -3,7 +3,7 @@
  * Ensures 100% offline access by caching core assets and third-party CDNs
  */
 
-const CACHE_NAME = "puretech-wallet-cache-v10";
+const CACHE_NAME = "puretech-wallet-cache-v15";
 const STATIC_ASSETS = [
   "./",
   "./index.html",
@@ -45,7 +45,11 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
 
   // Live currency/gold rates are dynamic, bypass caching or network-first
-  if (url.hostname.includes("open.er-api.com") || url.hostname.includes("api.gold-api.com")) {
+  const isRatesApi = url.hostname.includes("open.er-api.com") ||
+                     url.hostname.includes("api.gold-api.com") ||
+                     url.pathname.includes("@fawazahmed0/currency-api") ||
+                     url.pathname.includes("currency-api");
+  if (isRatesApi) {
     event.respondWith(
       fetch(event.request).catch(() => new Response(JSON.stringify({ error: "offline" }), {
         headers: { "Content-Type": "application/json" }
@@ -63,19 +67,15 @@ self.addEventListener("fetch", (event) => {
       }
 
       return fetch(event.request).then((networkResponse) => {
-        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type === "opaque") {
-          // If opaque response from CDN (like fonts or scripts), still cache it safely
-          if (networkResponse && (networkResponse.type === "opaque" || networkResponse.status === 200)) {
-            const clone = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          }
-          return networkResponse;
-        }
+        if (!networkResponse) return networkResponse;
 
-        const responseToCache = networkResponse.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, responseToCache);
-        });
+        // Cache valid standard responses (200) and CDN no-cors responses (opaque)
+        if (networkResponse.status === 200 || networkResponse.type === "opaque") {
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
+        }
 
         return networkResponse;
       }).catch(() => {
