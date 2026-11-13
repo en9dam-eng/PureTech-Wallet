@@ -10,8 +10,87 @@ const SETTINGS_KEY = "puretech_wallet_settings_v1";
 
 let dbInstance = null;
 
+// الكشف الذكي عن لغة جهاز المتصفح (الإنجليزية عالمياً، العربية لأجهزة الناطقين بالعربية، والإسبانية)
+function detectInitialLanguage() {
+  try {
+    if (typeof navigator !== "undefined" && navigator.language) {
+      const navLang = navigator.language.toLowerCase();
+      if (navLang.startsWith("ar")) return "ar";
+      if (navLang.startsWith("es")) return "es";
+    }
+  } catch (e) {
+    // fallback
+  }
+  return "en"; // الإنجليزية هي الافتراضية عالمياً
+}
+
+// الحالة الابتدائية النظيفة تماماً للمستخدم الجديد (خالية 100% من أي بيانات وهمية)
+function getDefaultCleanState() {
+  const initialLang = detectInitialLanguage();
+  const isAr = initialLang === "ar";
+  const isEs = initialLang === "es";
+
+  return {
+    isDemoMode: false,
+    settings: {
+      lang: initialLang,
+      currency: "USD",
+      includeOnline: true,
+      autoSyncRates: true,
+      freelanceRole: isAr 
+        ? "مهندس برمجيات / عمل حر" 
+        : (isEs ? "Ingeniero de Software / Freelance" : "Software Engineer / Freelancer"),
+      privacyMode: false,
+      pinEnabled: false,
+      pinCode: ""
+    },
+    rates: {
+      usd: 1.00,
+      eur: 1.08,
+      gold: 85,
+      lastSyncDate: "",
+      lastSyncTime: ""
+    },
+    personalIncomes: [],
+    personalObligations: [],
+    assets: [],
+    channels: [],
+    creatorTransactions: [],
+    freelanceCats: {
+      income: isAr 
+        ? ["تطوير برمجيات ومواقع", "تصميم واجهات UI/UX", "استشارات ودعم تقني", "عقود عمل حر بالساعة"]
+        : (isEs 
+            ? ["Desarrollo de Software y Web", "Diseño UI/UX", "Consultoría y Soporte Técnico", "Contratos Freelance por Hora"]
+            : ["Software & Web Development", "UI/UX Design", "Consulting & Tech Support", "Hourly Freelance Contracts"]),
+      expense: isAr
+        ? ["استضافة وسيرفرات سحابية", "اشتراكات برمجيات وذكاء اصطناعي", "عمولات منصات العمل الحر", "معدات وتراخيص"]
+        : (isEs
+            ? ["Hosting y Servidores Cloud", "Suscripciones de Software e IA", "Comisiones de Plataformas Freelance", "Equipamiento y Licencias"]
+            : ["Cloud Hosting & Servers", "Software & AI Subscriptions", "Freelance Platform Fees", "Hardware & Licenses"])
+    },
+    customPersonalCats: {
+      income: isAr
+        ? ["مكافآت وحوافز", "عوائد استثمارات", "أعمال إضافية", "أخرى"]
+        : (isEs
+            ? ["Bonos e Incentivos", "Rendimientos de Inversión", "Trabajos Adicionales", "Otros"]
+            : ["Bonuses & Incentives", "Investment Returns", "Side Gigs", "Other"]),
+      expense: isAr
+        ? ["فواتير وخدمات منزلية", "أقساط والتزامات تمويلية", "رعاية صحية وتأمين", "تعليم وتدريب", "صيانة ومواصلات"]
+        : (isEs
+            ? ["Facturas y Servicios del Hogar", "Cuotas y Compromisos Financieros", "Salud y Seguros", "Educación y Formación", "Mantenimiento y Transporte"]
+            : ["Bills & Utilities", "Installments & Loan Payments", "Healthcare & Insurance", "Education & Training", "Maintenance & Transport"])
+    },
+    monthlyBudget: {
+      enabled: false,
+      amount: 0
+    },
+    freelanceTransactions: []
+  };
+}
+
 function getSampleState() {
   return {
+    isDemoMode: true,
     settings: {
       lang: "ar",
       currency: "EGP",
@@ -99,7 +178,7 @@ async function requestPersistentStorage() {
 
 // تدقيق وتطهير البيانات لمنع الثغرات أو إدخال عناصر مشوهة من ملفات الـ JSON
 function sanitizeState(raw) {
-  const def = getSampleState();
+  const def = getDefaultCleanState();
   if (!raw || typeof raw !== "object") return def;
 
   const cleanString = (val, fallback = "") => {
@@ -232,6 +311,7 @@ function sanitizeState(raw) {
   };
 
   return {
+    isDemoMode: Boolean(raw.isDemoMode),
     settings: {
       lang: ["ar", "en", "es"].includes(raw.settings?.lang) ? raw.settings.lang : def.settings.lang,
       currency: cleanString(raw.settings?.currency, def.settings.currency),
@@ -299,6 +379,39 @@ function openIndexedDB() {
   });
 }
 
+// التعرف على ما إذا كانت البيانات المخزنة هي البيانات التجريبية القديمة الافتراضية
+function isLegacySampleState(state) {
+  if (!state || typeof state !== "object") return false;
+  if (state.isDemoMode === true) return false;
+  const isOldRole = state.settings?.freelanceRole === "مهندس برمجيات ومصمم واجهات Full-Stack";
+  const hasSampleInc = Array.isArray(state.personalIncomes) && state.personalIncomes.some(i => i.id === "inc-1" && i.title === "راتب شركة التكنولوجيا الأساسي");
+  const hasSampleExp = Array.isArray(state.personalObligations) && state.personalObligations.some(e => e.id === "exp-1" && e.title === "إيجار الشقة السكنية");
+  return Boolean(isOldRole && hasSampleInc && hasSampleExp);
+}
+
+// تنظيف وتثبيت الحالة الفارغة عند الترحيل
+async function persistCleanState(freshState) {
+  try {
+    if (!dbInstance) await openIndexedDB();
+    if (dbInstance) {
+      const tx = dbInstance.transaction(STORE_NAME, "readwrite");
+      const store = tx.objectStore(STORE_NAME);
+      store.put(freshState, "app_state");
+    }
+  } catch (e) {
+    console.warn("Clean state persist error:", e);
+  }
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(freshState));
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({
+      settings: freshState.settings,
+      rates: freshState.rates
+    }));
+  } catch (e) {
+    console.warn("Clean state localStorage error:", e);
+  }
+}
+
 async function loadStoredState() {
   try {
     const db = await openIndexedDB();
@@ -311,6 +424,11 @@ async function loadStoredState() {
         req.onerror = () => res(null);
       });
       if (result) {
+        if (isLegacySampleState(result)) {
+          const fresh = getDefaultCleanState();
+          await persistCleanState(fresh);
+          return fresh;
+        }
         return mergeWithDefaultState(result);
       }
     }
@@ -321,13 +439,19 @@ async function loadStoredState() {
   try {
     const local = localStorage.getItem(STORAGE_KEY);
     if (local) {
-      return mergeWithDefaultState(JSON.parse(local));
+      const parsed = JSON.parse(local);
+      if (isLegacySampleState(parsed)) {
+        const fresh = getDefaultCleanState();
+        await persistCleanState(fresh);
+        return fresh;
+      }
+      return mergeWithDefaultState(parsed);
     }
   } catch (e) {
     console.warn("localStorage read fallback:", e);
   }
 
-  return getSampleState();
+  return getDefaultCleanState();
 }
 
 async function persistState() {

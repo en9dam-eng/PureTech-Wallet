@@ -1,9 +1,32 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" class="dark">
+<html lang="en" dir="ltr" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PureTech Wallet | محفظة بيور تك المالية</title>
+
+  <!-- Instant Smart Language & Direction Auto-Detector -->
+  <script>
+    (function() {
+      try {
+        var saved = localStorage.getItem("puretech_wallet_settings_v1");
+        var lang = "en";
+        if (saved) {
+          var parsed = JSON.parse(saved);
+          if (parsed && parsed.settings && parsed.settings.lang) {
+            lang = parsed.settings.lang;
+          }
+        } else if (typeof navigator !== "undefined" && navigator.language) {
+          var nav = navigator.language.toLowerCase();
+          if (nav.startsWith("ar")) lang = "ar";
+          else if (nav.startsWith("es")) lang = "es";
+          else lang = "en";
+        }
+        document.documentElement.lang = lang;
+        document.documentElement.dir = (lang === "ar") ? "rtl" : "ltr";
+      } catch(e) {}
+    })();
+  </script>
 
   <!-- PWA & Mobile Meta Tags -->
   <link rel="manifest" href="manifest.json">
@@ -117,9 +140,9 @@
             <span class="hidden sm:inline" data-i18n="label_currency">Currency</span>:
           </span>
           <select id="currencySelect" class="bg-dark-900 text-white font-semibold text-xs rounded-md px-2 py-1.5 border border-slate-700 focus:outline-none focus:border-brand-500 cursor-pointer">
-            <option value="EGP">EGP (ج.م)</option>
-            <option value="USD">USD ($)</option>
+            <option value="USD" selected>USD ($)</option>
             <option value="EUR">EUR (€)</option>
+            <option value="EGP">EGP (ج.م)</option>
             <option value="SAR">SAR (ر.س)</option>
             <option value="AED">AED (د.إ)</option>
             <option value="KWD">KWD (د.ك)</option>

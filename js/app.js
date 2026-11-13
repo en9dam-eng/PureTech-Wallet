@@ -2,7 +2,7 @@
  * PureTech Wallet - Core Application Engine, UI Renderer, Charts & Event Controllers
  */
 
-let appState = getSampleState();
+let appState = getDefaultCleanState();
 let wealthChart = null;
 let pillarsChart = null;
 let trendsChart = null;
@@ -1375,7 +1375,7 @@ async function fetchLiveMarketRates(isManual = false) {
   if (icon2) icon2.classList.add("fa-spin");
   if (statusEl) statusEl.textContent = dict.sync_status_fetching;
 
-  const baseCurr = (appState.settings.currency || "EGP").toUpperCase();
+  const baseCurr = (appState.settings.currency || "USD").toUpperCase();
   const baseLower = baseCurr.toLowerCase();
 
   try {
@@ -1436,7 +1436,9 @@ async function fetchLiveMarketRates(isManual = false) {
 
     if (usdInBase && usdInBase > 0) appState.rates.usd = Number(usdInBase.toFixed(2));
     if (eurInBase && eurInBase > 0) appState.rates.eur = Number(eurInBase.toFixed(2));
-    if (goldGramInBase && goldGramInBase > 0) appState.rates.gold = Math.round(goldGramInBase);
+    if (goldGramInBase && goldGramInBase > 0) {
+      appState.rates.gold = baseCurr === "USD" || baseCurr === "EUR" ? Number(goldGramInBase.toFixed(2)) : Math.round(goldGramInBase);
+    }
 
     const now = new Date();
     const todayStr = now.toISOString().split("T")[0];
@@ -2643,45 +2645,41 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   document.getElementById("btnLoadSampleData").addEventListener("click", async () => {
+    const isAr = appState.settings.lang === 'ar';
+    const isEs = appState.settings.lang === 'es';
     const ok = await requestConfirmation(
-      appState.settings.lang === 'ar' ? 'شحن البيانات النموذجية' : 'Load Sample Data',
-      appState.settings.lang === 'ar' ? 'سيتم استبدال البيانات الحالية ببيانات تجريبية شاملة وواقعية، هل تود المتابعة؟' : 'Current data will be replaced with rich realistic sample records. Proceed?'
+      isAr ? 'شحن البيانات النموذجية' : (isEs ? 'Cargar datos de muestra' : 'Load Sample Data'),
+      isAr ? 'سيتم استبدال البيانات الحالية ببيانات تجريبية شاملة وواقعية، هل تود المتابعة؟' : (isEs ? 'Los datos actuales serán reemplazados por registros de prueba completos. ¿Desea continuar?' : 'Current data will be replaced with rich realistic sample records. Proceed?')
     );
     if (ok) {
       appState = getSampleState();
+      appState.isDemoMode = true;
       await persistState();
       updateLanguageUI();
       renderAll();
       checkPinSecurityOnStartup();
-      showToast(appState.settings.lang === 'ar' ? 'تم شحن البيانات النموذجية بنجاح' : 'Sample data loaded');
+      showToast(isAr ? 'تم شحن البيانات النموذجية بنجاح' : (isEs ? 'Datos de muestra cargados con éxito' : 'Sample data loaded successfully'));
     }
   });
 
   document.getElementById("btnOpenClearConfirm").addEventListener("click", async () => {
+    const isAr = appState.settings.lang === 'ar';
+    const isEs = appState.settings.lang === 'es';
     const ok = await requestConfirmation(
-      appState.settings.lang === 'ar' ? 'تصفير المحفظة والبدء من الصفر' : 'Wipe Database Clean',
-      appState.settings.lang === 'ar' ? 'تحذير: هذا الإجراء لا يمكن التراجع عنه وسيحذف كافة المصادر والالتزامات والأصول والقنوات نهائياً!' : 'Warning: This action cannot be undone and will permanently wipe all entries!'
+      isAr ? 'تصفير المحفظة والبدء من الصفر' : (isEs ? 'Limpiar base de datos' : 'Wipe Database Clean'),
+      isAr ? 'تحذير: هذا الإجراء لا يمكن التراجع عنه وسيحذف كافة المصادر والالتزامات والأصول والقنوات نهائياً!' : (isEs ? 'Advertencia: ¡Esta acción no se puede deshacer y borrará permanentemente todos los registros!' : 'Warning: This action cannot be undone and will permanently wipe all entries!')
     );
     if (ok) {
-      appState = {
-        settings: { lang: "ar", currency: "EGP", includeOnline: true, freelanceRole: "", privacyMode: false, pinEnabled: false, pinCode: "" },
-        rates: { usd: 48.50, eur: 52.20, gold: 3750 },
-        personalIncomes: [],
-        personalObligations: [],
-        assets: [],
-        channels: [],
-        creatorTransactions: [],
-        freelanceCats: {
-          income: ["تطوير برمجيات", "استشارات"],
-          expense: ["أدوات واشتراكات"]
-        },
-        freelanceTransactions: []
-      };
+      const currentLang = appState.settings.lang || detectInitialLanguage();
+      const currentCurrency = appState.settings.currency || "USD";
+      appState = getDefaultCleanState();
+      appState.settings.lang = currentLang;
+      appState.settings.currency = currentCurrency;
       await persistState();
       updateLanguageUI();
       renderAll();
       checkPinSecurityOnStartup();
-      showToast(appState.settings.lang === 'ar' ? 'تم تصفير قاعدة البيانات بنجاح' : 'Database wiped cleanly');
+      showToast(isAr ? 'تم تصفير المحفظة بالكامل والبدء من الصفر' : (isEs ? 'Base de datos restablecida con éxito' : 'Database successfully wiped clean'));
     }
   });
 });
