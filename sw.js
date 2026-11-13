@@ -3,11 +3,13 @@
  * Ensures 100% offline access by caching core assets and third-party CDNs
  */
 
-const CACHE_NAME = "puretech-wallet-cache-v16";
+const CACHE_NAME = "puretech-wallet-cache-v17";
 const STATIC_ASSETS = [
   "./",
   "./index.html",
   "./manifest.json",
+  "./apple-touch-icon.png",
+  "./apple-touch-icon-precomposed.png",
   "./css/styles.css",
   "./js/i18n.js",
   "./js/db.js",
